@@ -210,14 +210,17 @@ svg { display: block; max-width: 100%; }
     radial-gradient(1px 1px at 63% 52%, #fff 50%, transparent 52%);
 }
 
-/* The sun travels a daily arc above the text: --t = fraction of the local day (0 = midnight, 0.5 = noon) */
+/*
+ * The sun travels a daily arc in the band above the text: --t = fraction of the local day
+ * (0 = midnight, 0.5 = noon). At noon it touches the top; at 6 AM/PM it is 36px lower.
+ */
 .sky-orb {
   position: absolute;
   z-index: -1;
   width: 72px;
   height: 72px;
   left: calc(var(--t, 0.5) * 100% - 36px);
-  bottom: calc(cos(var(--t, 0.5) * 1turn) * -26% + 60%);
+  bottom: calc(100% - 80px - (0.5 + cos(var(--t, 0.5) * 1turn) / 2) * 72px);
   border-radius: 50%;
   background: radial-gradient(circle, #fff7da 0 26%, var(--sun) 30% 46%, rgb(255 182 39 / 0%) 70%);
   opacity: calc(1 - var(--stars, 0));
@@ -227,7 +230,7 @@ svg { display: block; max-width: 100%; }
 
 .sky-card--hero {
   border-radius: var(--radius-xl);
-  min-height: 320px;
+  min-height: clamp(320px, 22vw + 220px, 380px);
   padding: var(--space-6) var(--space-5) var(--space-5);
   display: grid;
   align-content: end;
@@ -271,7 +274,7 @@ svg { display: block; max-width: 100%; }
   border-radius: var(--radius-l);
   text-decoration: none;
 }
-.sky-card--mini .sky-orb { width: 36px; height: 36px; left: calc(var(--t, 0.5) * 100% - 18px); bottom: calc(cos(var(--t, 0.5) * 1turn) * -22% + 66%); }
+.sky-card--mini .sky-orb { display: none; }
 .sky-card--mini .sky-card__title { font-weight: 700; letter-spacing: -0.01em; }
 .sky-card--mini .clock { font-size: var(--step-3); font-weight: 400; letter-spacing: -0.03em; }
 .sky-card--mini .sky-card__meta { font-size: var(--step--1); }
@@ -308,6 +311,11 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
 }
 .facts dt { color: var(--muted); font-weight: 550; }
 .facts dd { font-weight: 600; font-variant-numeric: tabular-nums; }
+@media (max-width: 559px) {
+  .facts { grid-template-columns: 1fr; }
+  .facts dt { padding-bottom: 0; }
+  .facts dd { border-top: 0; padding-top: 2px; }
+}
 
 .chips {
   display: flex;
@@ -346,6 +354,8 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
   white-space: nowrap;
 }
 .table th { color: var(--muted); font-weight: 600; font-size: var(--step--1); }
+.table tbody th { color: var(--ink); font-size: var(--step-0); font-weight: 600; }
+.table td:last-child { white-space: normal; min-width: 10rem; }
 .badge {
   display: inline-block;
   margin-left: var(--space-2);
@@ -371,7 +381,7 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
 .link-group h2,
 .link-group h3 { margin-bottom: var(--space-3); }
 .link-columns {
-  columns: 13rem auto;
+  columns: 10rem auto;
   column-gap: var(--space-5);
   margin: 0;
   padding: 0;

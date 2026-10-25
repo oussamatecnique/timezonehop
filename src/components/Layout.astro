@@ -21,7 +21,8 @@ interface Props {
 
 const { meta, crumbs = [], jsonLd = [] } = Astro.props;
 const ld = [websiteLd(), organizationLd(), ...(crumbs.length > 1 ? [breadcrumbLd(crumbs)] : []), ...jsonLd];
-const hasSidebar = Astro.slots.has('sidebar');
+// The sidebar only exists to hold an ad; without ads, the content gets the full width.
+const hasSidebar = Astro.slots.has('sidebar') && import.meta.env.PUBLIC_ADS_ENABLED === 'true';
 const utc = iana('UTC');
 const builtAt = `${formatDate(utc, BUILD_NOW, 'medium')}, ${formatTime(utc, BUILD_NOW, { hour12: true })} UTC`;
 const fontFace =

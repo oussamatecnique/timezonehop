@@ -1,11 +1,11 @@
 ---
 /** Reserved ad space. Renders nothing until ads are enabled (PUBLIC_ADS_ENABLED=true). */
 interface Props {
-  slot: 'below-tool' | 'in-content' | 'sidebar';
+  kind: 'below-tool' | 'in-content' | 'sidebar';
 }
 
-const { slot } = Astro.props;
+const { kind } = Astro.props;
 const enabled = import.meta.env.PUBLIC_ADS_ENABLED === 'true';
 ---
 
-{enabled && <div class:list={['ad-slot', { 'ad-slot--sidebar': slot === 'sidebar' }]} data-ad-slot-name={slot} />}
+{enabled && <div class:list={['ad-slot', { 'ad-slot--sidebar': kind === 'sidebar' }]} data-ad-kind={kind} />}

@@ -1,0 +1,49 @@
+---
+import Layout from '../components/Layout.astro';
+import LinkGrid, { type LinkGroup } from '../components/LinkGrid.astro';
+import { getCatalog, urlOf } from '../data/catalog';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'hub', hub: 'time' } as const;
+const cat = getCatalog();
+
+const CONTINENTS: [string, string][] = [
+  ['AF', 'Africa'], ['AS', 'Asia'], ['EU', 'Europe'], ['NA', 'North and Central America'],
+  ['SA', 'South America'], ['OC', 'Oceania'], ['AN', 'Antarctica'],
+];
+const countryGroups: LinkGroup[] = CONTINENTS.map(([code, heading]) => ({
+  heading,
+  links: cat.countries
+    .filter(k => k.continent === code)
+    .map(k => ({ href: urlOf(k), label: k.name })),
+})).filter(g => g.links.length);
+
+const byLetter = new Map<string, { href: string; label: string }[]>();
+for (const c of [...cat.cities].sort((a, b) => a.qualifiedName.localeCompare(b.qualifiedName))) {
+  const letter = c.qualifiedName.normalize('NFD')[0].toUpperCase();
+  const key = /[A-Z]/.test(letter) ? letter : '#';
+  byLetter.set(key, [...(byLetter.get(key) ?? []), { href: urlOf(c), label: `${c.qualifiedName}, ${c.countryName}` }]);
+}
+const cityGroups: LinkGroup[] = [...byLetter.entries()].map(([letter, links]) => ({ heading: letter, id: `cities-${letter}`, links }));
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>World clock: the current time in every city and country</h1>
+  <p class="lede">
+    Pick a country or city to see its live local time, time zone, daylight saving dates and the time difference from you.
+  </p>
+  <section class="stack-tight" aria-labelledby="countries-heading">
+    <h2 id="countries-heading">Countries</h2>
+    <LinkGrid groups={countryGroups} level={3} />
+  </section>
+  <section class="stack-tight" aria-labelledby="cities-heading">
+    <h2 id="cities-heading">Cities from A to Z</h2>
+    <nav aria-label="Jump to letter">
+      <ul class="chips">
+        {cityGroups.map(g => <li><a class="chip" href={`#${g.id}`}>{g.heading}</a></li>)}
+      </ul>
+    </nav>
+    <LinkGrid groups={cityGroups} level={3} />
+  </section>
+</Layout>

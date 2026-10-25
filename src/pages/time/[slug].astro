@@ -1,0 +1,142 @@
+---
+import Layout from '../../components/Layout.astro';
+import SkyClockCard from '../../components/SkyClockCard.astro';
+import FactsList, { type Fact } from '../../components/FactsList.astro';
+import DifferenceTable from '../../components/DifferenceTable.astro';
+import Faq from '../../components/Faq.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import Converter from '../../islands/Converter';
+import {
+  getCatalog, nameOf, urlOf, sameZoneCities, citiesInCountry, pairsFrom, type Place,
+} from '../../data/catalog';
+import { cityView, countryView, type CountryView } from '../../lib/content/place';
+import { sunProps, sunText, coordsText, formatPopulation } from '../../lib/content/present';
+import { toConverterZone, quickPicks } from '../../lib/converter-zones';
+import { pageMeta, crumbsFor } from '../../lib/seo/meta';
+import { iana, offsetAt, zoneKey } from '../../lib/time/zone';
+import { BUILD_NOW } from '../../lib/build-time';
+
+export function getStaticPaths() {
+  return [...getCatalog().time.entries()].map(([slug, place]) => ({ params: { slug }, props: { place } }));
+}
+
+interface Props {
+  place: Place;
+}
+
+const { place } = Astro.props;
+const ref = { type: 'place', place } as const;
+const name = nameOf(place);
+const view = place.kind === 'city' ? cityView(place, BUILD_NOW) : countryView(place, BUILD_NOW);
+const country = place.kind === 'country' ? (view as CountryView) : null;
+const key = zoneKey(view.zone);
+
+const facts: Fact[] = [
+  { term: 'Time zone', value: view.longName === view.offsetLabel ? view.offsetLabel : `${view.longName} (${view.abbreviation})` },
+  { term: 'UTC offset', value: view.offsetLabel },
+  ...(view.tzId ? [{ term: 'IANA time zone', value: view.tzId }] : []),
+  { term: 'Daylight saving', value: view.dst.text },
+];
+const sun = sunText(view.zone, view.sun);
+if (sun) facts.push({ term: view.sunDate ? `Sun (${view.sunDate})` : 'Sun', value: sun });
+if (place.kind === 'city') facts.push({ term: 'Country', value: place.countryName, href: `/time/${place.countrySlug}` });
+if (place.kind === 'country' && place.capital) facts.push({ term: 'Capital', value: place.capital.name, href: urlOf(place.capital) });
+if (view.population > 0) facts.push({ term: 'Population', value: formatPopulation(view.population) });
+const coords = coordsText(view.coords);
+if (coords) facts.push({ term: 'Coordinates', value: coords });
+
+const link = (p: Place) => ({ href: urlOf(p), label: nameOf(p) });
+const sameZone = place.kind === 'city' ? sameZoneCities(place, 12).map(link) : [];
+const inCountry = citiesInCountry(place.cc, 25).filter(c => c !== place).slice(0, place.kind === 'country' ? 24 : 12).map(link);
+const conversions = pairsFrom(place).map(p => ({ href: urlOf(p), label: `${name} to ${nameOf(p.to)}` }));
+const countryName = place.kind === 'city' ? place.countryName : place.name;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>{view.h1}</h1>
+  <SkyClockCard zone={view.zone} title={`Current time in ${name}`} {...sunProps(view.zone, view.sun)} />
+  <p class="diff-you" data-diff-you data-zone={key} data-offset={view.offsetMinutes}>{view.offsetLabel}</p>
+
+  {
+    country?.multiZone && (
+      <section class="stack-tight" aria-labelledby="zones-heading">
+        <h2 id="zones-heading">Time zones in {place.name}</h2>
+        <ul class="clock-grid">
+          {country.zones.map(z => {
+            const first = z.cities.find(c => c.slug) ?? z.cities[0];
+            return (
+              <li>
+                <SkyClockCard
+                  zone={iana(z.tz)}
+                  size="mini"
+                  title={first?.name ?? z.abbreviation}
+                  href={first?.slug ? `/time/${first.slug}` : undefined}
+                />
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )
+  }
+
+  <Converter
+    client:visible
+    title={`Convert ${name} time`}
+    pageZones={[toConverterZone(place)]}
+    quickPicks={quickPicks()}
+    isHome={false}
+    ssrNow={BUILD_NOW}
+  />
+  <AdSlot kind="below-tool" />
+
+  <section class="stack-tight" aria-labelledby="facts-heading">
+    <h2 id="facts-heading">{name} time zone</h2>
+    <FactsList items={facts} />
+  </section>
+
+  {
+    country?.multiZone && (
+      <section class="stack-tight" aria-labelledby="zone-cities-heading">
+        <h2 id="zone-cities-heading">Main cities by time zone</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">Time zone</th>
+                <th scope="col">UTC offset now</th>
+                <th scope="col">Cities</th>
+              </tr>
+            </thead>
+            <tbody>
+              {country.zones.map(z => (
+                <tr>
+                  <td>{z.abbreviation}</td>
+                  <td>{z.offsetLabel}</td>
+                  <td>
+                    {z.cities.map((c, i) => (
+                      <>
+                        {i > 0 && ', '}
+                        {c.slug ? <a href={`/time/${c.slug}`}>{c.name}</a> : c.name}
+                      </>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  <DifferenceTable heading={`Time difference from ${name}`} rows={view.differences} />
+  <AdSlot kind="in-content" />
+  <Faq items={view.faq} />
+  <RelatedLinks heading={`Convert ${name} time`} links={conversions} variant="columns" />
+  <RelatedLinks heading={`Other places on ${view.abbreviation} time`} links={sameZone} />
+  <RelatedLinks heading={place.kind === 'country' ? `Cities in ${countryName}` : `More cities in ${countryName}`} links={inCountry} />
+
+  <AdSlot kind="sidebar" slot="sidebar" />
+</Layout>

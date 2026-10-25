@@ -153,6 +153,8 @@ function build(): Catalog {
   }
 
   const cities: City[] = [];
+  // GeoNames' raw name -> our city (zone city lists use raw names; most populous wins).
+  const cityByRawName = new Map<string, City>();
   const baseCounts = new Map<string, number>();
   for (const p of pending) baseCounts.set(p.base, (baseCounts.get(p.base) ?? 0) + 1);
   // pending is in population order, so the most populous city claims the bare slug.
@@ -176,11 +178,12 @@ function build(): Catalog {
       kind: 'city', id: raw.id, slug, name, qualifiedName, cc: raw.cc, countrySlug, countryName, admin1: raw.admin1,
       lat: raw.lat, lon: raw.lon, population: raw.pop, tz: raw.tz, capital: raw.capital,
     });
-    byRef.set(refKey(raw.cc, raw.ascii), cities[cities.length - 1]);
+    const city = cities[cities.length - 1];
+    byRef.set(refKey(raw.cc, raw.ascii), city);
+    if (!cityByRawName.has(refKey(raw.cc, raw.name))) cityByRawName.set(refKey(raw.cc, raw.name), city);
   }
 
   const cityById = new Map(cities.map(c => [c.id, c]));
-  const cityByCcName = new Map(cities.map(c => [refKey(c.cc, c.name), c]));
 
   const countries: Country[] = rawCountries.map(k => {
     const capital = k.capitalId !== null ? cityById.get(k.capitalId) ?? null : null;
@@ -196,7 +199,8 @@ function build(): Catalog {
       const group = groups.get(sig) ?? { tz: z.tz, cities: [] };
       groups.set(sig, group);
       for (const n of z.cities) {
-        if (group.cities.length < 3) group.cities.push({ name: n, slug: cityByCcName.get(refKey(k.cc, n))?.slug });
+        const city = cityByRawName.get(refKey(k.cc, n));
+        if (group.cities.length < 3) group.cities.push({ name: city?.name ?? n, slug: city?.slug });
       }
     }
     const zones = [...groups.values()];

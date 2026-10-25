@@ -37,6 +37,7 @@ const abbr = zoneAbbreviation(zone, BUILD_NOW);
 const off = formatOffset(offset);
 const zoneText = abbr === off ? off : `${abbr} (${off})`;
 
+const MiniTag = href ? 'a' : 'div';
 const attrs = {
   'data-sky': '',
   'data-zone': key,
@@ -66,7 +67,7 @@ const attrs = {
       </p>
     </section>
   ) : (
-    <a class={`sky-card sky-card--mini sky-${phase}`} href={href} {...attrs}>
+    <MiniTag class={`sky-card sky-card--mini sky-${phase}`} href={href} {...attrs}>
       <span class="sky-orb" aria-hidden="true" />
       <span class="sky-card__title">{title}</span>
       <span class="clock">
@@ -75,7 +76,10 @@ const attrs = {
           <span data-clock data-format="ampm">{ampm}</span>
         </span>
       </span>
-      <span class="sky-card__meta" data-clock data-format="date-short">{formatDate(zone, BUILD_NOW, 'short')}</span>
-    </a>
+      <span class="sky-card__meta">
+        <span data-clock data-format="date-short">{formatDate(zone, BUILD_NOW, 'short')}</span>,{' '}
+        <span data-clock data-format="abbr">{abbr}</span>
+      </span>
+    </MiniTag>
   )
 }

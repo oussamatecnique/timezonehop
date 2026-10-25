@@ -1,0 +1,47 @@
+---
+import type { Difference } from '../lib/content/place';
+import { nameOf, urlOf, zoneOf } from '../data/catalog';
+import { offsetAt, zoneKey } from '../lib/time/zone';
+import { formatTime } from '../lib/time/format';
+import { BUILD_NOW } from '../lib/build-time';
+
+interface Props {
+  heading: string;
+  rows: Difference[];
+}
+
+const { heading, rows } = Astro.props;
+---
+
+<section class="stack-tight" aria-labelledby="diff-heading">
+  <h2 id="diff-heading">{heading}</h2>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">City</th>
+          <th scope="col">Local time</th>
+          <th scope="col">Difference</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map(r => {
+            const zone = zoneOf(r.place);
+            return (
+              <tr data-zone={zoneKey(zone)} data-offset={offsetAt(zone, BUILD_NOW)}>
+                <th scope="row">
+                  <a href={urlOf(r.place)}>{nameOf(r.place)}</a>
+                </th>
+                <td>
+                  <span data-clock data-format="time">{formatTime(zone, BUILD_NOW, { hour12: true })}</span>
+                </td>
+                <td>{r.text}</td>
+              </tr>
+            );
+          })
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

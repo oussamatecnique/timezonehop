@@ -46,6 +46,11 @@ describe('catalog', () => {
     expect(cat.timezone.get('utc')?.kind).toBe('abbr');
   });
 
+  it('country zones use display names and link their city pages', () => {
+    const usa = cat.time.get('usa') as any;
+    expect(usa.zones[0].cities[0]).toEqual({ name: 'New York', slug: 'new-york' });
+  });
+
   it('links pairs, urls and zones', () => {
     const est = cat.timezone.get('est')!;
     expect(urlOf(est)).toBe('/timezone/est');
