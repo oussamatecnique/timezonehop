@@ -13,6 +13,8 @@ import {
 import { dayRange, instantToFraction, shiftDay } from './converter/timeline';
 import ZoneRow from './ZoneRow';
 import Timeline from './Timeline';
+import SearchBox, { entryToZone, loadIndex } from './SearchBox';
+import type { SearchEntry } from '../lib/search/match';
 
 interface Props {
   title: string;
@@ -47,16 +49,28 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
       // keep UTC
     }
     const known = [...pageZones, ...quickPicks];
-    const resolve = (token: string) => {
+    const resolver = (entries: SearchEntry[] = []) => (token: string) => {
       const decoded = decodeURIComponent(token);
-      return known.find(z => z.token === decoded || z.key === decoded) ?? zoneFromSavedKey(decoded);
+      const fromIndex = entries.find(e => e.u.endsWith(`/${decoded}`));
+      return known.find(z => z.token === decoded || z.key === decoded) ?? (fromIndex ? entryToZone(fromIndex) : zoneFromSavedKey(decoded));
     };
-    const shared = parseShare(location.search, resolve);
+    const shared = parseShare(location.search, resolver());
     setState({
       zones: shared.zones ?? initialZones({ pageZones, visitorTz, saved: loadPrefs().savedZones, isHome }),
       anchor: shared.anchor ?? 'now',
       hour12: effectiveHour12(),
     });
+    // Share links can name any city: resolve the rest once the search index arrives.
+    if (new URLSearchParams(location.search).has('z')) {
+      loadIndex()
+        .then(entries => {
+          const full = parseShare(location.search, resolver(entries));
+          if (full.zones) setState(s => ({ ...s, zones: full.zones! }));
+        })
+        .catch(() => {
+          // keep what resolved without the index
+        });
+    }
     setNow(Date.now());
     mounted.current = true;
 
@@ -183,7 +197,8 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
 
       {picking && (
         <div class="picker">
-          <p class="picker__hint">Pick a city to add</p>
+          <SearchBox id="add-city-search" mode="pick" autoFocus onPick={add} />
+          <p class="picker__hint">Or pick a popular one</p>
           <ul class="chips">
             {quickPicks
               .filter(q => !state.zones.some(z => z.key === q.key))

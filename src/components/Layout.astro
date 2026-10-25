@@ -6,6 +6,7 @@ import themeInit from '../scripts/theme-init.ts?iife';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 import Breadcrumbs from './Breadcrumbs.astro';
+import SearchBox from '../islands/SearchBox';
 import { websiteLd, organizationLd, breadcrumbLd } from '../lib/seo/jsonld';
 import type { Crumb, PageMeta } from '../lib/seo/meta';
 import { BUILD_NOW } from '../lib/build-time';
@@ -62,7 +63,7 @@ const json = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <Header />
+    <Header><SearchBox client:idle id="site-search" mode="navigate" /></Header>
     <div class:list={['page', { 'page--sidebar': hasSidebar }]}>
       <main id="main" class="stack">
         {crumbs.length > 1 && <Breadcrumbs crumbs={crumbs} />}
