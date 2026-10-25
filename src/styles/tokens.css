@@ -1,0 +1,89 @@
+/* Design tokens. Light = dawn mist, dark = night sky. */
+
+@property --sky-from {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #5fb4ee;
+}
+@property --sky-to {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #a9dcff;
+}
+
+:root {
+  --paper: #f3f5fa;
+  --surface: #ffffff;
+  --ink: #121a33;
+  --muted: #535e7c;
+  --line: #dde2ee;
+  --accent: #2f45d8;
+  --accent-soft: #e4e8fc;
+  --accent-ink: #ffffff;
+  --sun: #ffb627;
+
+  --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Type scale, ratio 1.25 on a 17px base */
+  --step--1: 0.875rem;
+  --step-0: 1.0625rem;
+  --step-1: 1.3125rem;
+  --step-2: 1.625rem;
+  --step-3: 2.0625rem;
+  --step-4: clamp(2.25rem, 1.6rem + 2.6vw, 2.875rem);
+  --clock-hero: clamp(4rem, 2rem + 13vw, 8.75rem);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  --radius-s: 12px;
+  --radius-l: 20px;
+  --radius-xl: 28px;
+
+  --measure: 68ch;
+  --page: 1120px;
+  --tap: 44px;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: #0e1430;
+    --surface: #151d40;
+    --ink: #e8ecf8;
+    --muted: #a3adca;
+    --line: #26305a;
+    --accent: #93a6ff;
+    --accent-soft: #1f2a5c;
+    --accent-ink: #0e1430;
+    --sun: #ffc94d;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: #0e1430;
+  --surface: #151d40;
+  --ink: #e8ecf8;
+  --muted: #a3adca;
+  --line: #26305a;
+  --accent: #93a6ff;
+  --accent-soft: #1f2a5c;
+  --accent-ink: #0e1430;
+  --sun: #ffc94d;
+  color-scheme: dark;
+}
+
+/* Sky phases (colors mirror src/lib/time/sky.ts, which is contrast-tested) */
+.sky-night { --sky-from: #0f1a3d; --sky-to: #23306b; --sky-ink: #ffffff; --sky-ink-soft: rgb(255 255 255 / 78%); --stars: 1; }
+.sky-dawn { --sky-from: #f6b8a8; --sky-to: #fde3c4; --sky-ink: #0b1220; --sky-ink-soft: rgb(11 18 32 / 72%); --stars: 0; }
+.sky-day { --sky-from: #5fb4ee; --sky-to: #a9dcff; --sky-ink: #0b1220; --sky-ink-soft: rgb(11 18 32 / 72%); --stars: 0; }
+.sky-dusk { --sky-from: #f59e5b; --sky-to: #b4639e; --sky-ink: #0b1220; --sky-ink-soft: rgb(11 18 32 / 76%); --stars: 0; }
+.sky-evening { --sky-from: #3a3f8f; --sky-to: #6a4c93; --sky-ink: #ffffff; --sky-ink-soft: rgb(255 255 255 / 80%); --stars: 0.6; }

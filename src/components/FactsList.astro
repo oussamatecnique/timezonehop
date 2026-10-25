@@ -1,0 +1,25 @@
+---
+export interface Fact {
+  term: string;
+  value: string;
+  href?: string;
+}
+
+interface Props {
+  items: Fact[];
+  label?: string;
+}
+
+const { items, label } = Astro.props;
+---
+
+<dl class="facts" aria-label={label}>
+  {
+    items.map(f => (
+      <>
+        <dt>{f.term}</dt>
+        <dd>{f.href ? <a href={f.href}>{f.value}</a> : f.value}</dd>
+      </>
+    ))
+  }
+</dl>

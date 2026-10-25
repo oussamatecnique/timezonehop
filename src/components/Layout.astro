@@ -1,0 +1,77 @@
+---
+import '../styles/global.css';
+import fontUrl from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
+import clockRuntime from '../scripts/clock-entry.ts?iife';
+import themeInit from '../scripts/theme-init.ts?iife';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import Breadcrumbs from './Breadcrumbs.astro';
+import { websiteLd, organizationLd, breadcrumbLd } from '../lib/seo/jsonld';
+import type { Crumb, PageMeta } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+import { formatDate, formatTime } from '../lib/time/format';
+import { iana } from '../lib/time/zone';
+
+interface Props {
+  meta: PageMeta;
+  crumbs?: Crumb[];
+  jsonLd?: object[];
+}
+
+const { meta, crumbs = [], jsonLd = [] } = Astro.props;
+const ld = [websiteLd(), organizationLd(), ...(crumbs.length > 1 ? [breadcrumbLd(crumbs)] : []), ...jsonLd];
+const hasSidebar = Astro.slots.has('sidebar');
+const utc = iana('UTC');
+const builtAt = `${formatDate(utc, BUILD_NOW, 'medium')}, ${formatTime(utc, BUILD_NOW, { hour12: true })} UTC`;
+const fontFace =
+  `@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:optional;` +
+  `src:url(${fontUrl}) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,` +
+  `U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}`;
+const json = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{meta.title}</title>
+    <meta name="description" content={meta.description} />
+    <link rel="canonical" href={meta.canonical} />
+    {meta.noindex && <meta name="robots" content="noindex, follow" />}
+    <link rel="alternate" hreflang="en" href={meta.canonical} />
+    <link rel="alternate" hreflang="x-default" href={meta.canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TimezoneHop" />
+    <meta property="og:title" content={meta.title} />
+    <meta property="og:description" content={meta.description} />
+    <meta property="og:url" content={meta.canonical} />
+    <meta property="og:image" content={meta.ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#f3f5fa" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e1430" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <style is:inline set:html={fontFace}></style>
+    <script is:inline set:html={themeInit}></script>
+    {ld.map(o => <script is:inline type="application/ld+json" set:html={json(o)} />)}
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <Header />
+    <div class:list={['page', { 'page--sidebar': hasSidebar }]}>
+      <main id="main" class="stack">
+        {crumbs.length > 1 && <Breadcrumbs crumbs={crumbs} />}
+        <slot />
+      </main>
+      {hasSidebar && <aside class="sidebar" aria-label="Advertisement"><slot name="sidebar" /></aside>}
+    </div>
+    <Footer />
+    <noscript><p class="page">Live clocks need JavaScript. Times shown were correct at {builtAt}.</p></noscript>
+    <script is:inline set:html={clockRuntime}></script>
+  </body>
+</html>

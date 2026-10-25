@@ -1,0 +1,29 @@
+---
+const year = new Date().getUTCFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer__inner">
+    <nav aria-label="Site">
+      <ul>
+        <li><a href="/time">World clock</a></li>
+        <li><a href="/timezone">Time zones</a></li>
+        <li><a href="/convert">Time zone converter</a></li>
+        <li><a href="/daylight-saving-time">Daylight saving time</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="About">
+      <ul>
+        <li><a href="/about">About</a></li>
+        <li><a href="/contact">Contact</a></li>
+        <li><a href="/privacy">Privacy</a></li>
+        <li><a href="/terms">Terms</a></li>
+      </ul>
+    </nav>
+    <p>
+      Time zone rules from the IANA time zone database. City data from
+      <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0).
+    </p>
+    <p>© {year} TimezoneHop</p>
+  </div>
+</footer>

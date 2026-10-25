@@ -1,11 +1,13 @@
 ---
+import Layout from '../components/Layout.astro';
+import SkyClockCard from '../components/SkyClockCard.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'home' } as const;
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>TimezoneHop</title>
-  </head>
-  <body>
-    <h1>TimezoneHop</h1>
-  </body>
-</html>
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>World Clock & Time Zone Converter</h1>
+  <SkyClockCard zone="visitor" title="Your local time" />
+</Layout>

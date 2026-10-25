@@ -2,7 +2,7 @@
  * Deterministic formatting. Strings are built from zonedParts + i18n names rather than
  * Intl output, so Node (build) and browsers (hydration) always produce identical text.
  */
-import { en, t } from '../../i18n';
+import { core as en, tc as t } from '../../i18n/core';
 import { ZONE_LABELS } from '../../data/zone-labels';
 import { formatOffset, offsetAt, zonedParts, type ZoneRef } from './zone';
 import { standardOffset } from './transitions';

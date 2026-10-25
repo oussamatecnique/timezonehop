@@ -1,0 +1,81 @@
+---
+/**
+ * A clock tinted with the sky of its place. Server-renders a build-time snapshot;
+ * the inline clock runtime takes over before first paint (see src/scripts/clock-runtime.ts).
+ */
+import { iana, offsetAt, zoneKey, zonedParts, type ZoneRef } from '../lib/time/zone';
+import { formatDate, formatOffset, zoneAbbreviation } from '../lib/time/format';
+import { skyPhase, type SunMinutes } from '../lib/time/sky';
+import { BUILD_NOW } from '../lib/build-time';
+
+interface Props {
+  zone: ZoneRef | 'visitor';
+  title: string;
+  /** Local sunrise/sunset, minutes after midnight. */
+  rise?: number;
+  set?: number;
+  polar?: 'day' | 'night';
+  size?: 'hero' | 'mini';
+  href?: string;
+}
+
+const { zone: zoneProp, title, rise, set, polar, size = 'hero', href } = Astro.props;
+const zone = zoneProp === 'visitor' ? iana('UTC') : zoneProp;
+const key = zoneProp === 'visitor' ? 'visitor' : zoneKey(zone);
+const label = zone.kind === 'fixed' ? zone.label : undefined;
+const offset = offsetAt(zone, BUILD_NOW);
+const p = zonedParts(zone, BUILD_NOW);
+const minutes = p.hour * 60 + p.minute;
+const sun: SunMinutes | undefined = polar
+  ? polar === 'day' ? 'polar-day' : 'polar-night'
+  : rise !== undefined && set !== undefined ? { rise, set } : undefined;
+const phase = skyPhase(minutes, sun);
+const pad = (n: number) => String(n).padStart(2, '0');
+const hm = `${p.hour % 12 || 12}:${pad(p.minute)}`;
+const ampm = p.hour < 12 ? 'AM' : 'PM';
+const abbr = zoneAbbreviation(zone, BUILD_NOW);
+const off = formatOffset(offset);
+const zoneText = abbr === off ? off : `${abbr} (${off})`;
+
+const attrs = {
+  'data-sky': '',
+  'data-zone': key,
+  'data-offset': offset,
+  'data-label': label,
+  'data-rise': polar ? undefined : rise,
+  'data-set': polar ? undefined : set,
+  'data-polar': polar,
+  style: `--t:${(minutes / 1440).toFixed(4)}`,
+};
+---
+
+{
+  size === 'hero' ? (
+    <section class={`sky-card sky-card--hero sky-${phase}`} aria-label={title} {...attrs}>
+      <span class="sky-orb" aria-hidden="true" />
+      <p class="clock">
+        <span data-clock data-format="hm">{hm}</span>
+        <span class="clock__side">
+          <span data-clock data-format="sec">:{pad(p.second)}</span>
+          <span data-clock data-format="ampm">{ampm}</span>
+        </span>
+      </p>
+      <p class="sky-card__meta">
+        <span data-clock data-format="date-long">{formatDate(zone, BUILD_NOW, 'long')}</span>,{' '}
+        <span data-clock data-format="zone">{zoneText}</span>
+      </p>
+    </section>
+  ) : (
+    <a class={`sky-card sky-card--mini sky-${phase}`} href={href} {...attrs}>
+      <span class="sky-orb" aria-hidden="true" />
+      <span class="sky-card__title">{title}</span>
+      <span class="clock">
+        <span data-clock data-format="hm">{hm}</span>
+        <span class="clock__side">
+          <span data-clock data-format="ampm">{ampm}</span>
+        </span>
+      </span>
+      <span class="sky-card__meta" data-clock data-format="date-short">{formatDate(zone, BUILD_NOW, 'short')}</span>
+    </a>
+  )
+}
