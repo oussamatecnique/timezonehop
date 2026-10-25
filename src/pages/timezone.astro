@@ -1,0 +1,43 @@
+---
+import Layout from '../components/Layout.astro';
+import LinkGrid, { type LinkGroup } from '../components/LinkGrid.astro';
+import { getCatalog, placeByRef, urlOf, type Place } from '../data/catalog';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'hub', hub: 'timezone' } as const;
+const cat = getCatalog();
+const REGIONS: [string, string][] = [
+  ['NA', 'North America'], ['SA', 'South America'], ['EU', 'Europe'], ['AF', 'Africa'], ['AS', 'Asia'], ['OC', 'Australia and New Zealand'],
+];
+const continentOf = (p: Place) => (p.kind === 'country' ? p.continent : cat.countries.find(k => k.cc === p.cc)?.continent ?? '');
+
+const universal = cat.abbreviations.filter(a => !a.data.representative);
+const groups: LinkGroup[] = [
+  { heading: 'Universal', links: universal.map(a => ({ href: urlOf(a), label: `${a.data.abbr}: ${a.data.name}` })) },
+  ...REGIONS.map(([code, heading]) => ({
+    heading,
+    links: cat.abbreviations
+      .filter(a => a.data.representative && continentOf(placeByRef(a.data.representative)) === code)
+      .map(a => ({ href: urlOf(a), label: `${a.data.abbr}: ${a.data.name}` })),
+  })),
+].filter(g => g.links.length);
+
+const offsets: LinkGroup[] = [{ heading: 'UTC offsets', links: cat.offsets.map(o => ({ href: urlOf(o), label: o.label })) }];
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>Time zones: abbreviations and UTC offsets</h1>
+  <p class="lede">
+    What EST, CET or IST mean, which places use them, and the current time in each. Every time zone is an offset from
+    Coordinated Universal Time (UTC).
+  </p>
+  <section class="stack-tight" aria-labelledby="abbr-heading">
+    <h2 id="abbr-heading">Time zone abbreviations</h2>
+    <LinkGrid groups={groups} level={3} />
+  </section>
+  <section class="stack-tight" aria-labelledby="offsets-heading">
+    <h2 id="offsets-heading">Every UTC offset</h2>
+    <LinkGrid groups={offsets} level={3} />
+  </section>
+</Layout>

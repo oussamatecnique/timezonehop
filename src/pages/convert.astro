@@ -1,0 +1,35 @@
+---
+import Layout from '../components/Layout.astro';
+import LinkGrid from '../components/LinkGrid.astro';
+import RelatedLinks from '../components/RelatedLinks.astro';
+import Converter from '../islands/Converter';
+import { getCatalog, nameOf, urlOf, type Pair } from '../data/catalog';
+import { TOP_ABBREVIATIONS } from '../data/popular';
+import { quickPicks } from '../lib/converter-zones';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { webAppLd } from '../lib/seo/jsonld';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'hub', hub: 'convert' } as const;
+const cat = getCatalog();
+const pairLink = (p: Pair) => ({ href: urlOf(p), label: `${nameOf(p.from)} to ${nameOf(p.to)}` });
+const abbrPairs = cat.pairs.filter(p => p.kind === 'abbr').slice(0, 60).map(pairLink);
+const placePairs = cat.pairs.filter(p => p.kind === 'place').slice(0, 60).map(pairLink);
+const topAbbr = TOP_ABBREVIATIONS.map(s => cat.timezone.get(s)!);
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)} jsonLd={[webAppLd('Time zone converter', '/convert')]}>
+  <h1>Time zone converter</h1>
+  <p class="lede">
+    Add the cities you need, drag the timeline to any time, and share the result with one link.
+  </p>
+  <Converter client:idle title="Convert a time" pageZones={[]} quickPicks={quickPicks()} isHome={false} ssrNow={BUILD_NOW} />
+  <LinkGrid
+    groups={[
+      { heading: 'Popular time zone conversions', links: abbrPairs },
+      { heading: 'Popular city conversions', links: placePairs },
+    ]}
+  />
+  <RelatedLinks heading="Convert from a time zone" links={topAbbr.map(z => ({ href: urlOf(z), label: nameOf(z) }))} />
+  <RelatedLinks heading="Convert from a city" links={cat.popular.map(p => ({ href: urlOf(p), label: nameOf(p) }))} />
+</Layout>

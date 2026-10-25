@@ -1,0 +1,134 @@
+---
+import Layout from '../../components/Layout.astro';
+import SkyClockCard from '../../components/SkyClockCard.astro';
+import FactsList, { type Fact } from '../../components/FactsList.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import Converter from '../../islands/Converter';
+import { getCatalog, nameOf, placeByRef, urlOf, type AbbrZone, type OffsetZone } from '../../data/catalog';
+import { abbrView, offsetView } from '../../lib/content/timezone';
+import { toConverterZone, quickPicks } from '../../lib/converter-zones';
+import { pageMeta, crumbsFor } from '../../lib/seo/meta';
+import { formatDifference, formatOffset } from '../../lib/time/format';
+import { BUILD_NOW } from '../../lib/build-time';
+
+export function getStaticPaths() {
+  return [...getCatalog().timezone.entries()].map(([slug, zone]) => ({ params: { slug }, props: { zone } }));
+}
+
+interface Props {
+  zone: AbbrZone | OffsetZone;
+}
+
+const { zone } = Astro.props;
+const cat = getCatalog();
+const ref = zone.kind === 'abbr' ? ({ type: 'abbr', zone } as const) : ({ type: 'offset', zone } as const);
+const abbr = zone.kind === 'abbr' ? abbrView(zone, BUILD_NOW) : null;
+const off = zone.kind === 'offset' ? offsetView(zone, BUILD_NOW) : null;
+const view = abbr ?? off!;
+const name = nameOf(zone);
+const offsetMinutes = zone.kind === 'abbr' ? zone.data.offsetMinutes : zone.offsetMinutes;
+const rep = zone.kind === 'abbr' && zone.data.representative ? placeByRef(zone.data.representative) : null;
+
+const relation =
+  offsetMinutes === 0
+    ? 'the same as Coordinated Universal Time'
+    : `${formatDifference(offsetMinutes)} ${offsetMinutes > 0 ? 'ahead of' : 'behind'} Coordinated Universal Time (UTC)`;
+
+const facts: Fact[] =
+  zone.kind === 'abbr'
+    ? [
+        { term: 'Abbreviation', value: zone.data.abbr },
+        { term: 'Full name', value: zone.data.name },
+        { term: 'UTC offset', value: formatOffset(offsetMinutes) },
+        {
+          term: 'Type',
+          value: zone.data.isDaylight
+            ? 'Daylight saving (summer) time'
+            : abbr?.sibling
+              ? `Standard time; summer time is ${abbr.sibling.data.abbr}`
+              : 'Standard time all year',
+        },
+        ...(rep ? [{ term: 'Example location', value: nameOf(rep), href: urlOf(rep) }] : []),
+      ]
+    : [
+        { term: 'UTC offset', value: zone.label },
+        { term: 'Difference from UTC', value: offsetMinutes > 0 ? `${formatDifference(offsetMinutes)} ahead` : `${formatDifference(offsetMinutes)} behind` },
+        { term: 'Cities on it right now', value: String(off!.citiesNow.length) },
+      ];
+
+const sameOffset = cat.abbreviations
+  .filter(a => a !== zone && a.data.offsetMinutes === offsetMinutes)
+  .map(a => ({ href: urlOf(a), label: `${a.data.abbr}: ${a.data.name}` }));
+const offsetPage = cat.offsets.find(o => o.offsetMinutes === offsetMinutes);
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>{view.h1}</h1>
+  <SkyClockCard zone={view.zone} title={`Current time in ${name}`} />
+  <p class="lede">{abbr ? abbr.definition : `${zone.kind === 'offset' ? zone.label : name} is ${relation}.`}</p>
+  {
+    abbr?.inEffectNote && (
+      <p class="callout">
+        {abbr.inEffectNote}
+        {rep && (
+          <>
+            {' '}
+            <a href={urlOf(rep)}>See the current time in {nameOf(rep)}</a>.
+          </>
+        )}
+      </p>
+    )
+  }
+  {abbr?.note && <p class="prose">{abbr.note}</p>}
+
+  <Converter
+    client:visible
+    title={`Convert ${name} time`}
+    pageZones={[toConverterZone(zone)]}
+    quickPicks={quickPicks()}
+    isHome={false}
+    ssrNow={BUILD_NOW}
+  />
+  <AdSlot kind="below-tool" />
+
+  <section class="stack-tight" aria-labelledby="facts-heading">
+    <h2 id="facts-heading">About {name}</h2>
+    <FactsList items={facts} />
+  </section>
+
+  {
+    abbr && (
+      <section class="stack-tight prose" aria-labelledby="used-heading">
+        <h2 id="used-heading">Where {name} is used</h2>
+        <ul>
+          {abbr.usedIn.map(u => (
+            <li>{u}</li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+  <AdSlot kind="in-content" />
+
+  {abbr && <RelatedLinks heading={`Convert ${name} to other time zones`} links={abbr.pairs.map(p => ({ href: urlOf(p), label: `${name} to ${nameOf(p.to)}` }))} variant="columns" />}
+  {
+    off && (
+      <RelatedLinks
+        heading={`Places on ${zone.kind === 'offset' ? zone.label : name} right now`}
+        links={off.citiesNow.map(c => ({ href: urlOf(c), label: `${c.qualifiedName}, ${c.countryName}` }))}
+        variant="columns"
+      />
+    )
+  }
+  <RelatedLinks
+    heading={`Time zones at ${formatOffset(offsetMinutes)}`}
+    links={[
+      ...(abbr?.sibling ? [{ href: urlOf(abbr.sibling), label: `${abbr.sibling.data.abbr}: ${abbr.sibling.data.name}` }] : []),
+      ...sameOffset,
+      ...(zone.kind === 'abbr' && offsetPage ? [{ href: urlOf(offsetPage), label: `All places on ${offsetPage.label}` }] : []),
+    ]}
+  />
+
+  <AdSlot kind="sidebar" slot="sidebar" />
+</Layout>

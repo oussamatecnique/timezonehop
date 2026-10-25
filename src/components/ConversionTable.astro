@@ -1,0 +1,38 @@
+---
+import type { PairRow } from '../lib/content/pair';
+
+interface Props {
+  from: string;
+  to: string;
+  rows: PairRow[];
+}
+
+const { from, to, rows } = Astro.props;
+---
+
+<section class="stack-tight" aria-labelledby="table-heading">
+  <h2 id="table-heading">{from} to {to} time table</h2>
+  <div class="table-wrap">
+    <table class="table table--conversion">
+      <thead>
+        <tr>
+          <th scope="col">{from}</th>
+          <th scope="col">{to}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          rows.map(r => (
+            <tr data-conversion-row class:list={{ 'is-work': r.hour >= 9 && r.hour < 17 }}>
+              <td>{r.fromLabel}</td>
+              <td>
+                {r.toLabel}
+                {r.dayShift !== 0 && <span class="badge">{r.dayShift > 0 ? 'next day' : 'previous day'}</span>}
+              </td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
+</section>

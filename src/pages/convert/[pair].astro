@@ -1,0 +1,97 @@
+---
+import Layout from '../../components/Layout.astro';
+import ConversionTable from '../../components/ConversionTable.astro';
+import RelatedLinks from '../../components/RelatedLinks.astro';
+import AdSlot from '../../components/AdSlot.astro';
+import Converter from '../../islands/Converter';
+import { getCatalog, nameOf, urlOf, type Pair } from '../../data/catalog';
+import { pairView } from '../../lib/content/pair';
+import { toConverterZone, quickPicks } from '../../lib/converter-zones';
+import { pageMeta, crumbsFor } from '../../lib/seo/meta';
+import { webAppLd } from '../../lib/seo/jsonld';
+import { BUILD_NOW } from '../../lib/build-time';
+
+export function getStaticPaths() {
+  return getCatalog().pairs.map(pair => ({ params: { pair: pair.slug }, props: { pair } }));
+}
+
+interface Props {
+  pair: Pair;
+}
+
+const { pair } = Astro.props;
+const ref = { type: 'pair', pair } as const;
+const view = pairView(pair, BUILD_NOW);
+const A = nameOf(pair.from);
+const B = nameOf(pair.to);
+const pairLink = (p: Pair) => ({ href: urlOf(p), label: `${nameOf(p.from)} to ${nameOf(p.to)}` });
+const noChanges =
+  pair.kind === 'abbr'
+    ? `${A} and ${B} are fixed UTC offsets, so the difference between them never changes.`
+    : `Neither ${A} nor ${B} changes its clocks in the next 12 months, so the difference stays the same.`;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)} jsonLd={[webAppLd(view.h1, urlOf(pair))]}>
+  <h1>{view.h1}</h1>
+  <p class="lede">{view.summary}</p>
+  {
+    view.inEffectNote && (
+      <p class="callout">
+        {view.inEffectNote}
+        {view.cityEquivalent && (
+          <>
+            {' '}
+            For local times that follow daylight saving, use the{' '}
+            <a href={urlOf(view.cityEquivalent)}>{pairLink(view.cityEquivalent).label} converter</a>.
+          </>
+        )}
+      </p>
+    )
+  }
+
+  <Converter
+    client:visible
+    title={`Convert ${A} to ${B}`}
+    pageZones={[toConverterZone(pair.from), toConverterZone(pair.to)]}
+    quickPicks={quickPicks()}
+    isHome={false}
+    ssrNow={BUILD_NOW}
+  />
+  <AdSlot kind="below-tool" />
+
+  <ConversionTable from={A} to={B} rows={view.rows} />
+
+  <section class="stack-tight prose" aria-labelledby="meeting-heading">
+    <h2 id="meeting-heading">Best time for a meeting</h2>
+    <p>{view.meetingText}</p>
+  </section>
+
+  <section class="stack-tight prose" aria-labelledby="dst-heading">
+    <h2 id="dst-heading">Daylight saving changes</h2>
+    {
+      view.dstChanges.length ? (
+        <ul>
+          {view.dstChanges.map(c => (
+            <li>{c.text}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{noChanges}</p>
+      )
+    }
+  </section>
+  <AdSlot kind="in-content" />
+
+  <section class="stack-tight" aria-labelledby="more-heading">
+    <h2 id="more-heading">More about these times</h2>
+    <ul class="chips">
+      <li><a class="chip" href={urlOf(view.reverse)}>{pairLink(view.reverse).label}</a></li>
+      <li><a class="chip" href={urlOf(pair.from)}>Current time in {A}</a></li>
+      <li><a class="chip" href={urlOf(pair.to)}>Current time in {B}</a></li>
+    </ul>
+  </section>
+  <RelatedLinks heading={`Convert ${A} to other places`} links={view.fromOthers.map(pairLink)} variant="columns" />
+  <RelatedLinks heading={`Convert other places to ${B}`} links={view.toOthers.map(pairLink)} variant="columns" />
+
+  <AdSlot kind="sidebar" slot="sidebar" />
+</Layout>
