@@ -1,0 +1,83 @@
+---
+import Layout from '../components/Layout.astro';
+import AdSlot from '../components/AdSlot.astro';
+import { urlOf } from '../data/catalog';
+import { dstTable, type DstPeriod } from '../lib/content/dst';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { fixed, iana, offsetAt } from '../lib/time/zone';
+import { formatDate, formatTime, labelFromIana } from '../lib/time/format';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'dst' } as const;
+const year = new Date(BUILD_NOW).getUTCFullYear();
+const rows = dstTable(BUILD_NOW);
+
+/** Local wall clock just before the change, the way clock changes are announced. */
+function when(tz: string, instant: number): string {
+  const before = fixed(offsetAt(iana(tz), instant - 60_000), '');
+  return `${formatDate(before, instant, 'medium')}, ${formatTime(before, instant, { hour12: true })}`;
+}
+const cell = (tz: string, p: DstPeriod | null, key: 'start' | 'end') => (p ? when(tz, p[key]) : 'No change');
+const zoneName = (tz: string, cities: { name: string }[]) => cities[0]?.name ?? labelFromIana(tz);
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>Daylight saving time {year} and {year + 1}: start and end dates</h1>
+  <p class="lede">
+    When clocks go forward and back in every country that uses daylight saving time, shown in each place's local time.
+  </p>
+
+  <section class="stack-tight prose" aria-labelledby="about-heading">
+    <h2 id="about-heading">How daylight saving time works</h2>
+    <p>
+      In spring, clocks move forward one hour, so evenings get an extra hour of daylight. In autumn they move back again.
+      North America changes on the second Sunday in March and the first Sunday in November. The European Union changes on
+      the last Sunday in March and the last Sunday in October, at the same moment in every EU country. In the southern
+      hemisphere the seasons are reversed: Australia, New Zealand and Chile move their clocks forward around October and
+      back around April.
+    </p>
+    <p>
+      Because these dates differ, the time difference between two cities can change for a few weeks each year. New York
+      and London, for example, are usually five hours apart but only four for about a week in March and a week in
+      October or November. Most of the world, including China, India, Japan and almost all of Africa, does not use
+      daylight saving time at all.
+    </p>
+  </section>
+
+  <AdSlot kind="below-tool" />
+
+  <section class="stack-tight" aria-labelledby="table-heading">
+    <h2 id="table-heading">Clock changes by country</h2>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Country</th>
+            <th scope="col">Area</th>
+            <th scope="col">Starts {year}</th>
+            <th scope="col">Ends {year}</th>
+            <th scope="col">Starts {year + 1}</th>
+            <th scope="col">Ends {year + 1}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {
+            rows.map(r => (
+              <tr>
+                <th scope="row">
+                  <a href={urlOf(r.country)}>{r.country.name}</a>
+                </th>
+                <td>{zoneName(r.tz, r.country.zones.find(z => z.tz === r.tz)?.cities ?? [])}</td>
+                <td>{cell(r.tz, r.thisYear, 'start')}</td>
+                <td>{cell(r.tz, r.thisYear, 'end')}</td>
+                <td>{cell(r.tz, r.nextYear, 'start')}</td>
+                <td>{cell(r.tz, r.nextYear, 'end')}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <AdSlot kind="in-content" />
+</Layout>

@@ -1,0 +1,40 @@
+---
+import Layout from '../components/Layout.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'static', page: 'terms' } as const;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>Terms of use</h1>
+  <div class="stack prose">
+    <p class="lede">By using TimezoneHop you agree to these terms. They are short because the site is simple.</p>
+    <section class="stack-tight">
+      <h2>Using the site</h2>
+      <p>
+        TimezoneHop is free to use for personal and business purposes. Please do not try to disrupt the site, scrape it in
+        a way that affects its performance, or present its content as your own.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Accuracy</h2>
+      <p>
+        We work hard to keep every time and date correct, but time zone rules can change at short notice and clocks
+        depend on your device. TimezoneHop is provided as is, without any warranty. For anything where an error would be
+        costly, such as a flight or a legal deadline, please confirm the time with an official source.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Third-party content</h2>
+      <p>
+        The site shows ads from Google AdSense and links to other websites. We are not responsible for their content or
+        their privacy practices. See our <a href="/privacy">privacy policy</a> for how ads use data.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Changes</h2>
+      <p>We may update these terms from time to time. The current version is always on this page.</p>
+    </section>
+  </div>
+</Layout>

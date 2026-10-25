@@ -1,0 +1,44 @@
+---
+import Layout from '../components/Layout.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'static', page: 'about' } as const;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>About TimezoneHop</h1>
+  <div class="stack prose">
+    <p class="lede">
+      TimezoneHop answers two questions as quickly as possible: what time is it there, and what time will it be there
+      when it is a certain time here.
+    </p>
+    <section class="stack-tight">
+      <h2>Where our times come from</h2>
+      <p>
+        Every clock on TimezoneHop is calculated in your browser from the IANA time zone database, the same source used by
+        phones, computers and operating systems around the world. It contains every time zone rule and every daylight
+        saving change, so the times you see follow the same rules as your own devices.
+      </p>
+      <p>
+        City names, locations and populations come from <a href="https://www.geonames.org/" rel="noopener">GeoNames</a>,
+        published under the Creative Commons Attribution 4.0 license. Sunrise and sunset times use the solar position
+        method published by the US National Oceanic and Atmospheric Administration (NOAA).
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>How accurate the clocks are</h2>
+      <p>
+        The live clocks use your device's clock, so they are as accurate as your device. Time zone rules are updated
+        whenever a country changes them, and every page is rebuilt each day so that dates such as the next daylight
+        saving change are always current.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Get in touch</h2>
+      <p>
+        Spotted a wrong time, or missing a city you need? <a href="/contact">Contact us</a> and we will look into it.
+      </p>
+    </section>
+  </div>
+</Layout>

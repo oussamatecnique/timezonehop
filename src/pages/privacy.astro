@@ -1,0 +1,64 @@
+---
+import Layout from '../components/Layout.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'static', page: 'privacy' } as const;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>Privacy policy</h1>
+  <div class="stack prose">
+    <p class="lede">
+      TimezoneHop does not ask for an account and does not collect your name, email address or location. This page
+      explains the little data that is involved in using the site.
+    </p>
+    <section class="stack-tight">
+      <h2>Settings stored in your browser</h2>
+      <p>
+        Your preferences, such as 12-hour or 24-hour time, light or dark theme, and the cities you last compared on the
+        home page, are saved in your browser's local storage. They never leave your device, and you can remove them at any
+        time by clearing your browser's site data.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Your time zone</h2>
+      <p>
+        To show the time difference from you, the site reads your device's time zone setting in your browser. It is not
+        sent to us or stored anywhere.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Analytics</h2>
+      <p>
+        We measure visits with Cloudflare Web Analytics, which does not use cookies, does not track you across sites and
+        does not collect personal data. It tells us which pages are popular and how fast they load.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Advertising</h2>
+      <p>
+        TimezoneHop is free because it shows ads served by Google AdSense. Google and its partners may use cookies to show
+        ads based on your previous visits to this and other websites. You can turn off personalized advertising in
+        <a href="https://adssettings.google.com/" rel="noopener">Google's ad settings</a>, and learn more in
+        <a href="https://policies.google.com/technologies/ads" rel="noopener">how Google uses data in advertising</a>.
+      </p>
+      <p>
+        Visitors in the European Economic Area, the United Kingdom and Switzerland are asked for consent through Google's
+        consent message before any advertising cookies are used, and can change their choice at any time from the
+        privacy settings link in that message.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Hosting</h2>
+      <p>
+        The site is served by Cloudflare. Like any web server, Cloudflare processes your IP address to deliver pages and
+        protect the site from abuse.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Contact</h2>
+      <p>Questions about privacy can be sent to <a href="mailto:hello@timezonehop.com">hello@timezonehop.com</a>.</p>
+    </section>
+  </div>
+</Layout>

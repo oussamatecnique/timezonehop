@@ -1,16 +1,75 @@
 ---
 import Layout from '../components/Layout.astro';
 import SkyClockCard from '../components/SkyClockCard.astro';
+import AdSlot from '../components/AdSlot.astro';
 import Converter from '../islands/Converter';
+import { getCatalog, nameOf, urlOf, zoneOf } from '../data/catalog';
+import { cityView, countryView } from '../lib/content/place';
+import { sunProps } from '../lib/content/present';
 import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { webAppLd } from '../lib/seo/jsonld';
 import { quickPicks } from '../lib/converter-zones';
 import { BUILD_NOW } from '../lib/build-time';
 
 const ref = { type: 'home' } as const;
+const grid = getCatalog().homeGrid.map(place => {
+  const view = place.kind === 'city' ? cityView(place, BUILD_NOW) : countryView(place, BUILD_NOW);
+  return { place, zone: zoneOf(place), sun: sunProps(view.zone, view.sun) };
+});
 ---
 
-<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)} jsonLd={[webAppLd('TimezoneHop time zone converter', '/')]}>
   <h1>World Clock & Time Zone Converter</h1>
   <SkyClockCard zone="visitor" title="Your local time" />
   <Converter client:idle title="Convert time between cities" pageZones={[]} quickPicks={quickPicks()} isHome ssrNow={BUILD_NOW} />
+  <AdSlot kind="below-tool" />
+
+  <section class="stack-tight" aria-labelledby="world-heading">
+    <h2 id="world-heading">Time around the world</h2>
+    <ul class="clock-grid">
+      {
+        grid.map(g => (
+          <li>
+            <SkyClockCard zone={g.zone} size="mini" title={nameOf(g.place)} href={urlOf(g.place)} {...g.sun} />
+          </li>
+        ))
+      }
+    </ul>
+    <ul class="chips">
+      <li><a class="chip" href="/time">All cities and countries</a></li>
+      <li><a class="chip" href="/timezone">All time zones</a></li>
+      <li><a class="chip" href="/convert">Popular conversions</a></li>
+    </ul>
+  </section>
+
+  <AdSlot kind="in-content" />
+
+  <section class="stack-tight prose" aria-labelledby="how-heading">
+    <h2 id="how-heading">How to use the converter</h2>
+    <p>
+      Your own time zone is filled in for you. Use Add city to compare up to six places, then drag the timeline (or use
+      the arrow keys) to pick any time of day. Every row shows that place's local time, its date, and a strip of its day,
+      so you can see at a glance whether it is morning, working hours or the middle of the night there. Copy link gives
+      you a link to exactly this comparison, which is handy for proposing a meeting time.
+    </p>
+  </section>
+
+  <section class="stack-tight prose" aria-labelledby="utc-heading">
+    <h2 id="utc-heading">What UTC and GMT mean</h2>
+    <p>
+      Coordinated Universal Time (UTC) is the reference every time zone is measured from. New York in winter is UTC−5,
+      which means its clocks are five hours behind UTC; Tokyo is UTC+9, nine hours ahead. Greenwich Mean Time (GMT) shows
+      the same time as UTC, but it is a time zone used in places like the United Kingdom in winter, while UTC is a
+      standard that never changes.
+    </p>
+  </section>
+
+  <section class="stack-tight prose" aria-labelledby="dst-heading">
+    <h2 id="dst-heading">Daylight saving time</h2>
+    <p>
+      Many countries move their clocks forward one hour in spring and back in autumn. The changes do not happen on the
+      same day everywhere, so the difference between two cities can shift for a few weeks each year. TimezoneHop applies
+      every rule automatically. See the <a href="/daylight-saving-time">daylight saving dates for every country</a>.
+    </p>
+  </section>
 </Layout>

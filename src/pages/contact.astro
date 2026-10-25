@@ -1,0 +1,27 @@
+---
+import Layout from '../components/Layout.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'static', page: 'contact' } as const;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>Contact</h1>
+  <div class="stack prose">
+    <p class="lede">
+      Email <a href="mailto:hello@timezonehop.com">hello@timezonehop.com</a>. We read every message.
+    </p>
+    <section class="stack-tight">
+      <h2>Reporting a wrong time</h2>
+      <p>
+        Please include the page address, the time you saw, the time you expected, and your own time zone. That lets us
+        reproduce the problem quickly.
+      </p>
+    </section>
+    <section class="stack-tight">
+      <h2>Suggesting a city or time zone</h2>
+      <p>Tell us the place and the country it is in. We add the most requested places first.</p>
+    </section>
+  </div>
+</Layout>

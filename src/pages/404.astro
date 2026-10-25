@@ -1,0 +1,21 @@
+---
+import Layout from '../components/Layout.astro';
+import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { BUILD_NOW } from '../lib/build-time';
+
+const ref = { type: 'static', page: '404' } as const;
+---
+
+<Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
+  <h1>This page does not exist</h1>
+  <p class="lede">
+    The address may be mistyped, or the page may have moved. Use the search at the top of the page to find any city,
+    country or time zone, or start from one of these:
+  </p>
+  <ul class="chips">
+    <li><a class="chip" href="/">Home</a></li>
+    <li><a class="chip" href="/time">World clock</a></li>
+    <li><a class="chip" href="/timezone">Time zones</a></li>
+    <li><a class="chip" href="/convert">Time zone converter</a></li>
+  </ul>
+</Layout>
