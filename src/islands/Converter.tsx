@@ -7,14 +7,13 @@ import { iana, zoneFromKey, type ZoneRef } from '../lib/time/zone';
 import { formatTime } from '../lib/time/format';
 import { effectiveHour12, loadPrefs, savePrefs } from '../lib/prefs';
 import {
-  MAX_ZONES, UTC_ZONE, addZone, initialZones, moveZone, parseShare, removeZone, serializeShare, swapFirstTwo,
-  zoneFromSavedKey, type ConverterState, type ConverterZone,
+  MAX_ZONES, addZone, initialZones, makeResolver, moveZone, parseShare, removeZone, serializeShare, serverZones,
+  swapFirstTwo, type ConverterState, type ConverterZone,
 } from './converter/state';
 import { dayRange, instantToFraction, shiftDay } from './converter/timeline';
 import ZoneRow from './ZoneRow';
 import Timeline from './Timeline';
-import SearchBox, { entryToZone, loadIndex } from './SearchBox';
-import type { SearchEntry } from '../lib/search/match';
+import SearchBox, { loadIndex } from './SearchBox';
 
 interface Props {
   title: string;
@@ -26,15 +25,9 @@ interface Props {
 
 const refOf = (z: ConverterZone): ZoneRef => zoneFromKey(z.key, z.label) ?? iana('UTC');
 
-function ssrZones(pageZones: ConverterZone[], isHome: boolean): ConverterZone[] {
-  if (isHome || pageZones.length === 0) return [{ key: 'America/New_York', label: 'New York', token: 'new-york' }, UTC_ZONE];
-  if (pageZones.length >= 2) return pageZones.slice(0, MAX_ZONES);
-  return [pageZones[0], pageZones[0].key === 'UTC' ? { key: 'Europe/London', label: 'London', token: 'london' } : UTC_ZONE];
-}
-
 export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow }: Props) {
   // Live from the first render (`now` starts at the build time), so hydration doesn't swap the header.
-  const [state, setState] = useState<ConverterState>({ zones: ssrZones(pageZones, isHome), anchor: 'now', hour12: true });
+  const [state, setState] = useState<ConverterState>({ zones: serverZones(pageZones, isHome), anchor: 'now', hour12: true });
   const [now, setNow] = useState(ssrNow);
   const [picking, setPicking] = useState(false);
   const [status, setStatus] = useState('');
@@ -50,12 +43,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
       // keep UTC
     }
     const known = [...pageZones, ...quickPicks];
-    const resolver = (entries: SearchEntry[] = []) => (token: string) => {
-      const decoded = decodeURIComponent(token);
-      const fromIndex = entries.find(e => e.u.endsWith(`/${decoded}`));
-      return known.find(z => z.token === decoded || z.key === decoded) ?? (fromIndex ? entryToZone(fromIndex) : zoneFromSavedKey(decoded));
-    };
-    const shared = parseShare(location.search, resolver());
+    const shared = parseShare(location.search, makeResolver(known));
     setState({
       zones: shared.zones ?? initialZones({ pageZones, visitorTz, saved: loadPrefs().savedZones, isHome }),
       anchor: shared.anchor ?? 'now',
@@ -65,7 +53,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
     if (new URLSearchParams(location.search).has('z')) {
       loadIndex()
         .then(entries => {
-          const full = parseShare(location.search, resolver(entries));
+          const full = parseShare(location.search, makeResolver(known, entries));
           if (full.zones) setState(s => ({ ...s, zones: full.zones! }));
         })
         .catch(() => {
@@ -124,8 +112,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
     savePrefs({ hour12 });
   };
 
-  const announce = () =>
-    setStatus(`${formatTime(zone0, state.anchor === 'now' ? Date.now() : instant, { hour12: state.hour12 })} in ${state.zones[0].label}`);
+  const announce = (t: number) => setStatus(`${formatTime(zone0, t, { hour12: state.hour12 })} in ${state.zones[0].label}`);
 
   return (
     <section class="converter" aria-labelledby="converter-title">

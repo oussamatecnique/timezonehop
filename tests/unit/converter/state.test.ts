@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  addZone, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, MAX_ZONES,
+  addZone, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, makeResolver, serverZones, MAX_ZONES,
 } from '../../../src/islands/converter/state';
 
 const z = (key: string, token?: string) => ({ key, label: key, token });
@@ -28,6 +28,28 @@ describe('state', () => {
     expect(messy.zones!.map(x => x.key)).toEqual(['tokyo', 'london', 'new-york']);
     expect(parseShare('?z=nowhere', resolve)).toEqual({}); // < 2 valid zones -> ignored
     expect(parseShare('?t=2031-01-01T00:00Z', resolve).anchor).toBe(Date.UTC(2031, 0, 1)); // far future is allowed
+  });
+
+  it('resolves share tokens safely', () => {
+    const known = [{ key: 'America/New_York', label: 'New York', token: 'new-york' }];
+    const entries = [{ n: 'CET', u: '/timezone/cet', z: 'fixed:60' }];
+    const bare = makeResolver(known);
+    expect(() => parseShare('?z=new-york,lon%2', bare)).not.toThrow();
+    expect(() => parseShare('?z=tokyo,%25', bare)).not.toThrow();
+    expect(bare('new-york')).toEqual(known[0]);
+    expect(bare('America/Chicago')).toEqual({ key: 'America/Chicago', label: 'Chicago' });
+    expect(bare('fixed:330')).toEqual({ key: 'fixed:330', label: 'UTC+5:30' });
+    expect(bare('cet')).toBeNull(); // a legacy IANA alias, not our CET abbreviation
+    expect(makeResolver(known, entries)('cet')).toEqual({ key: 'fixed:60', label: 'CET', token: 'cet' });
+  });
+
+  it('never shows UTC twice', () => {
+    const utcPage = [{ key: 'fixed:0', label: 'UTC', token: 'utc' }];
+    expect(serverZones(utcPage, false).map(z => z.key)).toEqual(['fixed:0', 'Europe/London']);
+    expect(initialZones({ pageZones: utcPage, visitorTz: 'UTC', saved: [], isHome: false }).map(z => z.key))
+      .toEqual(['fixed:0', 'Europe/London']);
+    expect(initialZones({ pageZones: utcPage, visitorTz: 'Asia/Tokyo', saved: [], isHome: false }).map(z => z.key))
+      .toEqual(['fixed:0', 'Asia/Tokyo']);
   });
 
   it('picks initial zones', () => {

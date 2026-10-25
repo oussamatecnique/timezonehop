@@ -12,7 +12,9 @@ it('handles 23h/25h days, snapping and day shifts', () => {
   expect(spring.end - spring.start).toBe(23 * H);
   expect(snap(Date.UTC(2026, 0, 1, 10, 7, 31))).toBe(Date.UTC(2026, 0, 1, 10, 0));
   expect(snap(Date.UTC(2026, 0, 1, 10, 8))).toBe(Date.UTC(2026, 0, 1, 10, 15));
-  expect(fractionToInstant(1.4, fall)).toBe(fall.end);
+  // The day is half-open: dragging past the end stops at 11:45 PM of the same day.
+  expect(fractionToInstant(1.4, fall)).toBe(fall.end - 15 * 60_000);
+  expect(dayRange(ny, fractionToInstant(1, fall))).toEqual(fall);
   expect(dayShift(iana('Asia/Tokyo'), ny, Date.UTC(2026, 9, 25, 20))).toBe(1);
   expect(dayShift(ny, iana('Asia/Tokyo'), Date.UTC(2026, 9, 25, 20))).toBe(-1);
 });

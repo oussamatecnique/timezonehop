@@ -1,7 +1,7 @@
 import { useRef } from 'preact/hooks';
 import { zonedParts, zonedToInstant, type ZoneRef } from '../lib/time/zone';
 import { formatDate, formatTime } from '../lib/time/format';
-import { fractionToInstant, instantToFraction, snap, type Range } from './converter/timeline';
+import { STEP, fractionToInstant, instantToFraction, snap, type Range } from './converter/timeline';
 
 interface Props {
   zone: ZoneRef;
@@ -10,7 +10,8 @@ interface Props {
   instant: number;
   hour12: boolean;
   onChange: (instant: number) => void;
-  onCommit: () => void;
+  /** Called with the final instant when a drag ends (keyboard changes are announced by aria-valuetext). */
+  onCommit: (instant: number) => void;
   onDay: (dir: -1 | 1) => void;
 }
 
@@ -19,6 +20,7 @@ const MINUTE = 60_000;
 export default function Timeline(p: Props) {
   const track = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const last = useRef(p.instant);
   const fraction = instantToFraction(p.instant, p.range);
   const day = zonedParts(p.zone, p.range.start);
   const ticks = [0, 6, 12, 18].map(hour => {
@@ -29,7 +31,8 @@ export default function Timeline(p: Props) {
 
   const fromPointer = (clientX: number) => {
     const rect = track.current!.getBoundingClientRect();
-    p.onChange(fractionToInstant((clientX - rect.left) / rect.width, p.range));
+    last.current = fractionToInstant((clientX - rect.left) / rect.width, p.range);
+    p.onChange(last.current);
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -54,14 +57,14 @@ export default function Timeline(p: Props) {
         next = p.range.start;
         break;
       case 'End':
-        next = p.range.end;
+        next = p.range.end - STEP;
         break;
       default:
         return;
     }
     e.preventDefault();
-    p.onChange(Math.min(p.range.end, Math.max(p.range.start, next)));
-    p.onCommit();
+    // Stay within the shown day; the day buttons move between days.
+    p.onChange(Math.min(p.range.end - STEP, Math.max(p.range.start, next)));
   };
 
   const valueNow = Math.round((p.instant - p.range.start) / MINUTE);
@@ -87,7 +90,7 @@ export default function Timeline(p: Props) {
         }}
         onPointerMove={e => dragging.current && fromPointer(e.clientX)}
         onPointerUp={() => {
-          if (dragging.current) p.onCommit();
+          if (dragging.current) p.onCommit(last.current);
           dragging.current = false;
         }}
         onPointerCancel={() => (dragging.current = false)}

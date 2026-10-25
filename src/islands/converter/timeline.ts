@@ -9,6 +9,8 @@ export interface Range {
 }
 
 const MINUTE = 60_000;
+/** Timeline step; the last selectable time of a day is its end minus one step. */
+export const STEP = 15 * MINUTE;
 
 /** Local midnight -> next local midnight in zone z (23 h or 25 h on DST days). */
 export function dayRange(z: ZoneRef, instant: number): Range {
@@ -38,9 +40,10 @@ export function snap(instant: number, stepMinutes = 15): number {
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 
+/** The range is half-open: the result never reaches r.end (the next day's midnight). */
 export function fractionToInstant(f: number, r: Range): number {
   const t = r.start + clamp(f, 0, 1) * (r.end - r.start);
-  return clamp(snap(t), r.start, r.end);
+  return clamp(snap(t), r.start, r.end - STEP);
 }
 
 export function instantToFraction(t: number, r: Range): number {
