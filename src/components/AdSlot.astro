@@ -1,11 +1,39 @@
 ---
-/** Reserved ad space. Renders nothing until ads are enabled (PUBLIC_ADS_ENABLED=true). */
+/**
+ * Reserved ad space with a fixed size, so loading an ad never shifts the page.
+ * Renders nothing until ads are enabled (PUBLIC_ADS_ENABLED=true and PUBLIC_ADSENSE_CLIENT set).
+ */
 interface Props {
   kind: 'below-tool' | 'in-content' | 'sidebar';
 }
 
 const { kind } = Astro.props;
-const enabled = import.meta.env.PUBLIC_ADS_ENABLED === 'true';
+const env = import.meta.env;
+const client = env.PUBLIC_ADSENSE_CLIENT;
+const enabled = env.PUBLIC_ADS_ENABLED === 'true' && !!client;
+const slotIds = {
+  'below-tool': env.PUBLIC_AD_SLOT_BELOW_TOOL,
+  'in-content': env.PUBLIC_AD_SLOT_IN_CONTENT,
+  sidebar: env.PUBLIC_AD_SLOT_SIDEBAR,
+};
 ---
 
-{enabled && <div class:list={['ad-slot', { 'ad-slot--sidebar': kind === 'sidebar' }]} data-ad-kind={kind} />}
+{
+  enabled &&
+    (kind === 'sidebar' ? (
+      <div class="ad-slot ad-slot--sidebar" data-ad-kind={kind}>
+        <ins class="adsbygoogle" style="display:inline-block;width:300px;height:600px" data-ad-client={client} data-ad-slot={slotIds[kind]} />
+      </div>
+    ) : (
+      <div class="ad-slot" data-ad-kind={kind}>
+        <ins
+          class="adsbygoogle"
+          style="display:block;width:100%"
+          data-ad-client={client}
+          data-ad-slot={slotIds[kind]}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      </div>
+    ))
+}

@@ -3,6 +3,7 @@ import '../styles/global.css';
 import fontUrl from '@fontsource-variable/manrope/files/manrope-latin-wght-normal.woff2?url';
 import clockRuntime from '../scripts/clock-entry.ts?iife';
 import themeInit from '../scripts/theme-init.ts?iife';
+import adsLoader from '../scripts/ads-entry.ts?iife';
 import Header from './Header.astro';
 import Footer from './Footer.astro';
 import Breadcrumbs from './Breadcrumbs.astro';
@@ -21,8 +22,10 @@ interface Props {
 
 const { meta, crumbs = [], jsonLd = [] } = Astro.props;
 const ld = [websiteLd(), organizationLd(), ...(crumbs.length > 1 ? [breadcrumbLd(crumbs)] : []), ...jsonLd];
+const adsClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
+const adsEnabled = import.meta.env.PUBLIC_ADS_ENABLED === 'true' && !!adsClient;
 // The sidebar only exists to hold an ad; without ads, the content gets the full width.
-const hasSidebar = Astro.slots.has('sidebar') && import.meta.env.PUBLIC_ADS_ENABLED === 'true';
+const hasSidebar = Astro.slots.has('sidebar') && adsEnabled;
 const utc = iana('UTC');
 const builtAt = `${formatDate(utc, BUILD_NOW, 'medium')}, ${formatTime(utc, BUILD_NOW, { hour12: true })} UTC`;
 const fontFace =
@@ -54,6 +57,7 @@ const json = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="theme-color" content="#f3f5fa" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0e1430" media="(prefers-color-scheme: dark)" />
+    {adsClient && <meta name="google-adsense-account" content={adsClient} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
@@ -75,5 +79,6 @@ const json = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
     <Footer />
     <noscript><p class="page">Live clocks need JavaScript. Times shown were correct at {builtAt}.</p></noscript>
     <script is:inline set:html={clockRuntime}></script>
+    {adsEnabled && <script is:inline data-client={adsClient} set:html={adsLoader} />}
   </body>
 </html>
