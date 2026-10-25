@@ -1,7 +1,9 @@
 ---
 import Layout from '../components/Layout.astro';
 import SkyClockCard from '../components/SkyClockCard.astro';
+import Converter from '../islands/Converter';
 import { pageMeta, crumbsFor } from '../lib/seo/meta';
+import { quickPicks } from '../lib/converter-zones';
 import { BUILD_NOW } from '../lib/build-time';
 
 const ref = { type: 'home' } as const;
@@ -10,4 +12,5 @@ const ref = { type: 'home' } as const;
 <Layout meta={pageMeta(ref, BUILD_NOW)} crumbs={crumbsFor(ref)}>
   <h1>World Clock & Time Zone Converter</h1>
   <SkyClockCard zone="visitor" title="Your local time" />
+  <Converter client:idle title="Convert time between cities" pageZones={[]} quickPicks={quickPicks()} isHome ssrNow={BUILD_NOW} />
 </Layout>

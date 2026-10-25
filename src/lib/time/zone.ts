@@ -128,6 +128,14 @@ export function offsetAt(z: ZoneRef, instant: number): number {
   return Math.round((asUtc - floored) / MINUTE);
 }
 
+/** −1/0/+1: is `zone`'s local calendar date before, equal to, or after `ref`'s at this instant? */
+export function dayShift(zone: ZoneRef, ref: ZoneRef, instant: number): -1 | 0 | 1 {
+  const a = zonedParts(zone, instant);
+  const b = zonedParts(ref, instant);
+  const diff = Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day);
+  return diff > 0 ? 1 : diff < 0 ? -1 : 0;
+}
+
 function matchesWall(z: ZoneRef, t: number, w: WallTime): boolean {
   const p = zonedParts(z, t);
   return p.year === w.year && p.month === w.month && p.day === w.day && p.hour === w.hour && p.minute === w.minute;

@@ -3,7 +3,7 @@ import { t } from '../../i18n';
 import {
   cityEquivalent, getCatalog, nameOf, pairFor, pairsFrom, zoneOf, type AbbrZone, type Pair, type PairEnd,
 } from '../../data/catalog';
-import { fixed, offsetAt, zonedParts, zonedToInstant, type ZoneRef } from '../time/zone';
+import { dayShift, fixed, offsetAt, zonedParts, zonedToInstant, type ZoneRef } from '../time/zone';
 import { transitionsBetween } from '../time/transitions';
 import { formatDate, formatDifference, formatOffset, formatTime, zoneAbbreviation } from '../time/format';
 import { meetingWindow, type MeetingWindow } from './meeting';
@@ -42,14 +42,6 @@ export interface PairView {
 
 const YEAR_MS = 365 * 86_400_000;
 const H12 = { hour12: true } as const;
-
-/** −1/0/+1: is `zone`'s local date before, equal to, or after `ref`'s at this instant? */
-export function dayShiftAt(zone: ZoneRef, ref: ZoneRef, instant: number): -1 | 0 | 1 {
-  const a = zonedParts(zone, instant);
-  const b = zonedParts(ref, instant);
-  const diff = Date.UTC(a.year, a.month - 1, a.day) - Date.UTC(b.year, b.month - 1, b.day);
-  return diff > 0 ? 1 : diff < 0 ? -1 : 0;
-}
 
 /** "9:00 AM" for minutes after local midnight. */
 function minutesLabel(m: number): string {
@@ -93,7 +85,7 @@ export function pairView(p: Pair, now: number): PairView {
       hour,
       fromLabel: formatTime(fromZone, instant, H12),
       toLabel: formatTime(toZone, instant, H12),
-      dayShift: dayShiftAt(toZone, fromZone, instant),
+      dayShift: dayShift(toZone, fromZone, instant),
     };
   });
 
