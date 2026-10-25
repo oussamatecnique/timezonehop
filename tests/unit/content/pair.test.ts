@@ -21,6 +21,13 @@ describe('pairView', () => {
     expect(v.reverse.slug).toBe('london-to-new-york');
   });
 
+  it('says when the other place is already on the next day', () => {
+    expect(pairView(pair('los-angeles-to-sydney'), NOW).summary).toBe(
+      'Sydney is 18 hours ahead of Los Angeles. When it is 9:00 AM in Los Angeles, it is 3:00 AM the next day in Sydney.',
+    );
+    expect(pairView(pair('sydney-to-los-angeles'), NOW).summary).toContain('3:00 PM the previous day in Los Angeles');
+  });
+
   it('EST to IST is fixed and points to the city equivalent', () => {
     const v = pairView(pair('est-to-ist'), NOW);
     expect(v.diffMinutes).toBe(630);

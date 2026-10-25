@@ -75,9 +75,16 @@ export function pairView(p: Pair, now: number): PairView {
   const at = (hour: number) => zonedToInstant(fromZone, { year: today.year, month: today.month, day: today.day, hour, minute: 0 });
 
   const summaryKey = diffMinutes > 0 ? 'pair.summary.ahead' : diffMinutes < 0 ? 'pair.summary.behind' : 'pair.summary.same';
+  const nineAm = at(9);
+  const shift = dayShift(toZone, fromZone, nineAm);
   const summary =
     t(summaryKey, { from: A, to: B, diff: formatDifference(diffMinutes) }) +
-    t('pair.summary.example', { from: A, to: B, time: formatTime(toZone, at(9), H12) });
+    t('pair.summary.example', {
+      from: A,
+      to: B,
+      time: formatTime(toZone, nineAm, H12),
+      day: shift > 0 ? t('pair.day.next') : shift < 0 ? t('pair.day.previous') : '',
+    });
 
   const rows: PairRow[] = Array.from({ length: 24 }, (_, hour) => {
     const instant = at(hour);
