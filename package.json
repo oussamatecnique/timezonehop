@@ -1,0 +1,32 @@
+{
+  "name": "timezonehop",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "TimezoneHop: world clock and time zone converter",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "vitest run tests/unit",
+    "test:dist": "vitest run tests/dist",
+    "test:e2e": "playwright test",
+    "data": "tsx scripts/build-data.ts"
+  },
+  "dependencies": {
+    "@astrojs/preact": "^6.1.1",
+    "@astrojs/sitemap": "^3.7.4",
+    "@preact/signals": "^2.11.3",
+    "astro": "^7.4.2",
+    "preact": "^11.0.2"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
+    "happy-dom": "^21.0.4",
+    "node-html-parser": "^9.0.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}
