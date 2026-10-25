@@ -44,6 +44,20 @@ export const en = {
   'abbr.inEffect.sibling': 'Most places that use {abbr} are currently on {sibling} ({siblingOffset}) until {date}. {rep} is currently {offset}.',
   'abbr.inEffect.other': '{rep} is currently {offset}.',
   'offset.h1': 'Current time in {offset}',
+
+  // converter pair pages
+  'pair.h1.abbr': '{from} to {to} Converter',
+  'pair.h1.place': '{from} to {to} Time Converter',
+  'pair.summary.ahead': '{to} is {diff} ahead of {from}.',
+  'pair.summary.behind': '{to} is {diff} behind {from}.',
+  'pair.summary.same': '{to} has the same time as {from}.',
+  'pair.summary.example': ' When it is 9:00 AM in {from}, it is {time} in {to}.',
+  'pair.meeting.overlap': 'The best time to meet is {fromStart}–{fromEnd} in {from} ({toStart}–{toEnd} in {to}), when both are within 9 AM–5 PM working hours.',
+  'pair.meeting.compromise': 'Working hours (9 AM–5 PM) do not overlap. The closest compromise is {fromTime} in {from}, which is {toTime} in {to}.',
+  'pair.dst.change': 'On {date}, {who} switches to {abbr} ({offset}). From then on, {to} is {diff}.',
+  'pair.dst.diff.ahead': '{diff} ahead of {from}',
+  'pair.dst.diff.behind': '{diff} behind {from}',
+  'pair.dst.diff.same': 'on the same time as {from}',
 } as const;
 
 export type EnKey = keyof typeof en;
