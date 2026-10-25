@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-25
 **Domain:** timezonehop.com (verified available 2026-10-25, to be registered at Cloudflare Registrar)
-**Status:** Draft for review
+**Status:** Live since 2026-10-25 (https://timezonehop.com)
 
 ---
 
