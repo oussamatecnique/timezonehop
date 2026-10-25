@@ -22,6 +22,9 @@ interface Props {
 
 const { meta, crumbs = [], jsonLd = [] } = Astro.props;
 const ld = [websiteLd(), organizationLd(), ...(crumbs.length > 1 ? [breadcrumbLd(crumbs)] : []), ...jsonLd];
+// Cloudflare Web Analytics (cookie-less). Only production builds set the token, so local runs don't count.
+const cfToken = import.meta.env.PUBLIC_CF_ANALYTICS_TOKEN;
+const cfBeacon = cfToken && /^[a-f0-9]{32}$/.test(cfToken) ? JSON.stringify({ token: cfToken }) : null;
 const adsClient = import.meta.env.PUBLIC_ADSENSE_CLIENT;
 const adsEnabled = import.meta.env.PUBLIC_ADS_ENABLED === 'true' && !!adsClient;
 // The sidebar only exists to hold an ad; without ads, the content gets the full width.
@@ -80,5 +83,6 @@ const json = (o: object) => JSON.stringify(o).replace(/</g, '\\u003c');
     <noscript><p class="page">Live clocks need JavaScript. Times shown were correct at {builtAt}.</p></noscript>
     <script is:inline set:html={clockRuntime}></script>
     {adsEnabled && <script is:inline data-client={adsClient} set:html={adsLoader} />}
+    {cfBeacon && <script is:inline type="module" src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={cfBeacon} />}
   </body>
 </html>
