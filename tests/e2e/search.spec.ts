@@ -14,9 +14,25 @@ test('header search navigates and converter add-city picks', async ({ page }) =>
   await page.goto('/');
   await hydrated(page);
   await page.getByRole('button', { name: /add city/i }).click();
+  await expect(page.locator('#add-city-search')).toBeFocused();
   await page.keyboard.type('dubai');
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-zone-row]')).toHaveCount(2);
+});
+
+test('the search icon stays inside the input while results are shown', async ({ page }) => {
+  await page.goto('/');
+  await hydrated(page);
+  await page.getByRole('button', { name: 'Add city or timezone' }).click();
+  await expect(page.locator('#add-city-search')).toBeFocused();
+  await page.keyboard.type('sydn');
+  await expect(page.getByRole('option').first()).toContainText('Sydney');
+  const picker = page.locator('.picker');
+  const input = (await picker.locator('.search__input').boundingBox())!;
+  const icon = (await picker.locator('.search__icon').boundingBox())!;
+  const center = icon.y + icon.height / 2;
+  expect(center).toBeGreaterThan(input.y);
+  expect(center).toBeLessThan(input.y + input.height);
 });
 
 test('share link restores state', async ({ page }) => {

@@ -656,6 +656,8 @@ button.chip { font: inherit; font-size: var(--step--1); font-weight: 600; cursor
 /* ---------- search ---------- */
 
 .search { position: relative; }
+/* The icon is centred on the input alone, even when the results list sits below it in the flow. */
+.search__field { position: relative; }
 .search__icon {
   position: absolute;
   left: 14px;

@@ -109,36 +109,38 @@ export default function SearchBox({ id, mode, onPick, autoFocus }: Props) {
       <label class="visually-hidden" for={id}>
         Search cities, countries and time zones
       </label>
-      <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="11" cy="11" r="7" />
-        <path d="M20 20l-3.5-3.5" />
-      </svg>
-      <input
-        id={id}
-        ref={input}
-        class="search__input"
-        type="search"
-        role="combobox"
-        autoComplete="off"
-        spellcheck={false}
-        placeholder={mode === 'navigate' ? 'Search a city or time zone' : 'Type a city, country or time zone'}
-        aria-autocomplete="list"
-        aria-expanded={showPanel && results.length > 0}
-        aria-controls={listId}
-        aria-activedescendant={showPanel && results[active] ? `${id}-opt-${active}` : undefined}
-        value={query}
-        onFocus={() => {
-          ensureIndex();
-          setOpen(true);
-        }}
-        onInput={e => {
-          setQuery((e.currentTarget as HTMLInputElement).value);
-          setActive(0);
-          setOpen(true);
-        }}
-        onKeyDown={onKeyDown}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
-      />
+      <div class="search__field">
+        <svg class="search__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" />
+          <path d="M20 20l-3.5-3.5" />
+        </svg>
+        <input
+          id={id}
+          ref={input}
+          class="search__input"
+          type="search"
+          role="combobox"
+          autoComplete="off"
+          spellcheck={false}
+          placeholder={mode === 'navigate' ? 'Search a city or time zone' : 'Type a city, country or time zone'}
+          aria-autocomplete="list"
+          aria-expanded={showPanel && results.length > 0}
+          aria-controls={listId}
+          aria-activedescendant={showPanel && results[active] ? `${id}-opt-${active}` : undefined}
+          value={query}
+          onFocus={() => {
+            ensureIndex();
+            setOpen(true);
+          }}
+          onInput={e => {
+            setQuery((e.currentTarget as HTMLInputElement).value);
+            setActive(0);
+            setOpen(true);
+          }}
+          onKeyDown={onKeyDown}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+        />
+      </div>
       {showPanel && (
         <div class="search__panel">
           {failed ? (
