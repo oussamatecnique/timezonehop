@@ -27,7 +27,7 @@ A world-time website whose job is to attract large volumes of organic search tra
 |---|---|
 | Site shape | One tool + programmatically generated landing pages |
 | Languages | English at launch, URL/i18n structure ready for `/fr/`, `/es/`, … |
-| Converter | From → To pair by default, "+ Add city" up to 6 zones, drag timeline |
+| Converter | Starts with the visitor's own zone (plus the page's subject); "Add city or timezone" up to 6 zones; no UTC by default (owner request 2026-10-25); drag timeline |
 | Stack | Astro (static) + Preact islands, hosted on Cloudflare (free tier) |
 | Domain | timezonehop.com |
 | Visual direction | "Sky-tinted clocks"; owner delegated details: fast, performant, user-friendly |
@@ -157,7 +157,7 @@ Footer:   hub links · trust pages · GeoNames attribution
 
 ### Interaction details
 - **Timeline:** horizontal drag across a 24 h range around the anchor. Snaps to 15 min; arrow keys ±15 min; Shift+arrow ±1 h; Home/End jump to the start/end of the range. All rows update live. The thumb updates with CSS transforms only (60 fps). "Now" returns to live mode, where the clocks tick again.
-- **Zone rows:** 2–6 rows. Remove (×) on rows 3+. Rows can be reordered with up/down buttons (no drag-reorder in v1). Swap exchanges rows 1 and 2.
+- **Zone rows:** 1–6 rows. Any row can be removed while 2+ remain. Rows can be reordered with up/down buttons (no drag-reorder in v1). Swap (shown with 2+ rows) exchanges rows 1 and 2.
 - **12h/24h:** default from the visitor's locale (`Intl.DateTimeFormat().resolvedOptions().hourCycle`); toggle in the tool; persisted.
 - **Copy link:** writes `?t=<UTC ISO minute>&z=<slug>,<slug>,…` to the clipboard. Opening such a URL restores that state. The canonical URL never includes query parameters. The page's URL is only updated (`history.replaceState`) when the visitor presses Copy link, so normal browsing keeps clean URLs.
 - **Saved zones:** on the home page, the visitor's last converter zones are remembered.

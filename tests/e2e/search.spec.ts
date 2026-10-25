@@ -16,7 +16,7 @@ test('header search navigates and converter add-city picks', async ({ page }) =>
   await page.getByRole('button', { name: /add city/i }).click();
   await page.keyboard.type('dubai');
   await page.keyboard.press('Enter');
-  await expect(page.locator('[data-zone-row]')).toHaveCount(3);
+  await expect(page.locator('[data-zone-row]')).toHaveCount(2);
 });
 
 test('share link restores state', async ({ page }) => {

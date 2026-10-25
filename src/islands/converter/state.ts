@@ -16,12 +16,12 @@ export interface ConverterState {
   hour12: boolean;
 }
 
-export const MIN_ZONES = 2;
+export const MIN_ZONES = 1;
 export const MAX_ZONES = 6;
 
 export const UTC_ZONE: ConverterZone = { key: 'UTC', label: 'UTC', token: 'utc' };
-export const LONDON_ZONE: ConverterZone = { key: 'Europe/London', label: 'London', token: 'london' };
-export const NEW_YORK_ZONE: ConverterZone = { key: 'America/New_York', label: 'New York', token: 'new-york' };
+/** Server-rendered stand-in for the visitor's own zone; the inline clock script fills it in before first paint. */
+export const VISITOR_PLACEHOLDER: ConverterZone = { key: 'visitor', label: 'Your time' };
 
 const isUtcKey = (k: string) => k === 'UTC' || k === 'Etc/UTC' || k === 'fixed:0';
 
@@ -98,9 +98,9 @@ export function makeResolver(
 
 /** Stable server-rendered defaults (personalized on the client after mount). */
 export function serverZones(pageZones: ConverterZone[], isHome: boolean): ConverterZone[] {
-  if (isHome || pageZones.length === 0) return [NEW_YORK_ZONE, UTC_ZONE];
+  if (isHome || pageZones.length === 0) return [VISITOR_PLACEHOLDER];
   if (pageZones.length >= 2) return pageZones.slice(0, MAX_ZONES);
-  return [pageZones[0], isUtcKey(pageZones[0].key) ? LONDON_ZONE : UTC_ZONE];
+  return [pageZones[0], VISITOR_PLACEHOLDER];
 }
 
 /** A zone known only by its key (saved prefs, visitor zone). */
@@ -112,18 +112,20 @@ export function zoneFromSavedKey(key: string): ConverterZone | null {
 }
 
 export function initialZones(o: { pageZones: ConverterZone[]; visitorTz: string; saved: string[]; isHome: boolean }): ConverterZone[] {
-  const visitor: ConverterZone | null =
-    isValidIana(o.visitorTz) && !isUtcKey(o.visitorTz) ? { key: o.visitorTz, label: `${labelFromIana(o.visitorTz)} (you)` } : null;
+  const visitor: ConverterZone | null = isValidIana(o.visitorTz)
+    ? { key: o.visitorTz, label: `${labelFromIana(o.visitorTz)} (you)` }
+    : null;
 
   if (o.isHome) {
-    const saved = o.saved.map(zoneFromSavedKey).filter((z): z is ConverterZone => z !== null);
+    const saved = o.saved
+      .map(k => (visitor && k === visitor.key ? visitor : zoneFromSavedKey(k)))
+      .filter((z): z is ConverterZone => z !== null);
     if (saved.length >= MIN_ZONES) return saved.slice(0, MAX_ZONES);
-    return visitor ? [visitor, UTC_ZONE] : [UTC_ZONE, LONDON_ZONE];
+    return [visitor ?? UTC_ZONE];
   }
 
   if (o.pageZones.length >= 2) return o.pageZones.slice(0, MAX_ZONES);
   const first = o.pageZones[0] ?? UTC_ZONE;
-  let second = visitor && visitor.key !== first.key ? visitor : UTC_ZONE;
-  if (second.key === first.key || (isUtcKey(second.key) && isUtcKey(first.key))) second = LONDON_ZONE;
-  return [first, second];
+  const sameAsPage = !visitor || visitor.key === first.key || (isUtcKey(visitor.key) && isUtcKey(first.key));
+  return sameAsPage ? [first] : [first, visitor];
 }

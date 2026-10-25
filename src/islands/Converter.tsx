@@ -32,6 +32,8 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const [picking, setPicking] = useState(false);
   const [status, setStatus] = useState('');
   const [shareUrl, setShareUrl] = useState('');
+  // False for the server render and the hydration pass: rows then carry the clock script's markers.
+  const [hydrated, setHydrated] = useState(false);
   const mounted = useRef(false);
 
   // Personalize after mount: visitor zone, saved zones, share link, 12/24h, live clock.
@@ -61,6 +63,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
         });
     }
     setNow(Date.now());
+    setHydrated(true);
     mounted.current = true;
 
     let timer: ReturnType<typeof setInterval> | undefined;
@@ -132,6 +135,8 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
           <ZoneRow
             key={z.key}
             label={z.label}
+            zoneKey={z.key}
+            serverRendered={!hydrated}
             zone={refOf(z)}
             reference={zone0}
             isFirst={i === 0}
@@ -141,12 +146,13 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
             hour12={state.hour12}
             canMoveUp={i > 0}
             canMoveDown={i < state.zones.length - 1}
-            canRemove={state.zones.length > 2}
+            canRemove={state.zones.length > 1}
             onMove={dir => update(s => moveZone(s, i, dir))}
             onRemove={() => update(s => removeZone(s, i))}
           />
         ))}
       </ol>
+      {state.zones.length === 1 && <p class="converter__hint">Add a city or timezone to compare times.</p>}
 
       <Timeline
         zone={zone0}
@@ -167,11 +173,13 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
           disabled={state.zones.length >= MAX_ZONES}
           onClick={() => setPicking(v => !v)}
         >
-          Add city
+          Add city or timezone
         </button>
-        <button type="button" class="btn" onClick={() => update(swapFirstTwo)}>
-          Swap
-        </button>
+        {state.zones.length >= 2 && (
+          <button type="button" class="btn" onClick={() => update(swapFirstTwo)}>
+            Swap
+          </button>
+        )}
         <button type="button" class="btn" aria-pressed={state.anchor === 'now'} onClick={() => update(s => ({ ...s, anchor: 'now' }))}>
           Now
         </button>

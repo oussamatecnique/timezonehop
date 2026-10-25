@@ -54,6 +54,11 @@ const attrs = {
   size === 'hero' ? (
     <section class={`sky-card sky-card--hero sky-${phase}`} aria-label={title} {...attrs}>
       <span class="sky-orb" aria-hidden="true" />
+      {zoneProp === 'visitor' && (
+        <p class="sky-card__caption">
+          Your local time in <span data-clock data-format="place">UTC</span>
+        </p>
+      )}
       <p class="clock">
         <span data-clock data-format="hm">{hm}</span>
         <span class="clock__side">

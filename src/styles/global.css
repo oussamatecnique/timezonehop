@@ -70,6 +70,13 @@ svg { display: block; max-width: 100%; }
 }
 .skip-link:focus { top: var(--space-2); }
 
+/*
+ * Astro styles island wrappers `display: contents`, which drops the stack's vertical spacing
+ * around them. Inside content stacks they are block boxes instead (more specific than Astro's rule).
+ */
+.stack > astro-island,
+.stack-tight > astro-island { display: block; }
+
 /* ---------- page frame ---------- */
 
 .site-header {
@@ -258,6 +265,16 @@ svg { display: block; max-width: 100%; }
   line-height: 1;
 }
 .clock__side > :first-child { opacity: 0.8; }
+
+.sky-card__caption {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--space-5);
+  right: var(--space-5);
+  font-size: var(--step-1);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
 
 .sky-card__meta {
   font-size: var(--step-0);
@@ -614,6 +631,7 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
 .timeline__thumb:active { cursor: grabbing; }
 
 .converter__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.converter__hint { color: var(--muted); font-size: var(--step--1); font-weight: 600; margin-top: calc(var(--space-2) * -1); }
 .btn[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 

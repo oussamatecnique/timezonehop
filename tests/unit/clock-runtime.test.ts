@@ -27,6 +27,18 @@ it('renders, recomputes offsets every call, and handles unknown visitor zones', 
   expect(document.querySelector('[data-sky]')!.className).toMatch(/^sky-/);
 });
 
+it("names the visitor's place", () => {
+  document.body.innerHTML = `<div data-zone="visitor"><span data-clock data-format="place"></span>
+    <span data-clock data-format="you-place"></span><span data-clock data-format="time"></span></div>`;
+  renderClocks(document, Date.UTC(2026, 9, 25, 14, 0), true, 'America/Sao_Paulo');
+  const [place, you, time] = document.querySelectorAll('[data-clock]');
+  expect(place.textContent).toBe('Sao Paulo');
+  expect(you.textContent).toBe('Sao Paulo (you)');
+  expect(time.textContent).toBe('11:00 AM');
+  renderClocks(document, Date.UTC(2026, 9, 25, 14, 0), true, 'Not/AZone');
+  expect(place.textContent).toBe('UTC');
+});
+
 it('resyncs immediately when a sleeping tab becomes visible', () => {
   vi.useFakeTimers();
   vi.setSystemTime(Date.UTC(2026, 9, 25, 12, 0, 0));

@@ -5,6 +5,13 @@ import { dayShift, type Range } from './converter/timeline';
 
 interface Props {
   label: string;
+  /** Zone key, or 'visitor' for the server-rendered stand-in of the visitor's own zone. */
+  zoneKey: string;
+  /**
+   * True until the island has mounted: the row then carries the clock script's data
+   * attributes so it shows the right (and, for 'visitor', the visitor's) time before hydration.
+   */
+  serverRendered: boolean;
   zone: ZoneRef;
   reference: ZoneRef;
   isFirst: boolean;
@@ -50,22 +57,29 @@ export default function ZoneRow(p: Props) {
       ? 'same time'
       : `${formatDifference(diff)} ${diff > 0 ? 'ahead' : 'behind'}`;
   const { background, work } = stripFor(p.zone, p.range);
+  const isVisitor = p.zoneKey === 'visitor';
+  const clock = (format: string) => (p.serverRendered ? { 'data-clock': '', 'data-format': format } : {});
+  const host = p.serverRendered
+    ? { 'data-zone': p.zoneKey, 'data-offset': off, 'data-label': p.zone.kind === 'fixed' ? p.zone.label : undefined }
+    : {};
 
   return (
-    <li class="zone-row" data-zone-row>
+    <li class="zone-row" data-zone-row {...host}>
       <div class="zone-row__top">
         <div class="zone-row__name">
-          <strong>{p.label}</strong>
+          <strong {...(isVisitor ? clock('you-place') : {})}>{p.label}</strong>
           <span class="zone-row__meta">
-            {abbr === offLabel ? offLabel : `${abbr} (${offLabel})`}
-            {rel && `, ${rel}`}
+            <span {...clock('zone')}>{abbr === offLabel ? offLabel : `${abbr} (${offLabel})`}</span>
+            {rel && !isVisitor && `, ${rel}`}
           </span>
         </div>
         <div class="zone-row__time">
-          <span class="zone-row__clock">{formatTime(p.zone, p.instant, { hour12: p.hour12 })}</span>
+          <span class="zone-row__clock" {...clock('time')}>
+            {formatTime(p.zone, p.instant, { hour12: p.hour12 })}
+          </span>
           <span class="zone-row__date">
-            {formatDate(p.zone, p.instant, 'short')}
-            {shift !== 0 && <span class="badge">{shift > 0 ? '+1 day' : '−1 day'}</span>}
+            <span {...clock('date-short')}>{formatDate(p.zone, p.instant, 'short')}</span>
+            {shift !== 0 && !isVisitor && <span class="badge">{shift > 0 ? '+1 day' : '−1 day'}</span>}
           </span>
         </div>
       </div>

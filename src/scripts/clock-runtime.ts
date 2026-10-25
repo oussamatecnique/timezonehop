@@ -3,14 +3,14 @@
  * shows the right time. DOM contract:
  *   [data-zone]       zone key ('Asia/Tokyo' | 'fixed:-300' | 'visitor'), plus data-offset
  *                     (build-time minutes, fallback for old browsers) and data-label (fixed zones)
- *   [data-clock]      data-format: time | time-seconds | hm | sec | ampm | date-long | date-short | abbr | offset | zone
+ *   [data-clock]      data-format: time | time-seconds | hm | sec | ampm | date-long | date-short | abbr | offset | zone | place | you-place
  *                     (zone taken from the closest [data-zone])
  *   [data-diff-you]   "14 hours ahead of you"
  *   [data-sky]        gets class sky-<phase> and --t (fraction of the local day); optional
  *                     data-rise/data-set (minutes after local midnight) or data-polar="day|night"
  */
 import { fixed, iana, isValidIana, offsetAt, zoneFromKey, zonedParts, formatOffset, type ZoneRef } from '../lib/time/zone';
-import { formatDate, formatDifference, formatTime, zoneAbbreviation } from '../lib/time/format';
+import { formatDate, formatDifference, formatTime, labelFromIana, zoneAbbreviation } from '../lib/time/format';
 import { skyPhase, type SkyPhase, type SunMinutes } from '../lib/time/sky';
 import { tc } from '../i18n/core';
 import { effectiveHour12, PREFS_EVENT } from '../lib/prefs';
@@ -56,6 +56,10 @@ function clockText(format: string, zone: ZoneRef, now: number, hour12: boolean):
     case 'date-short': return formatDate(zone, now, 'short');
     case 'abbr': return zoneAbbreviation(zone, now);
     case 'offset': return formatOffset(offsetAt(zone, now));
+    case 'place':
+      return zone.kind === 'iana' ? labelFromIana(zone.id) : zone.label;
+    case 'you-place':
+      return `${zone.kind === 'iana' ? labelFromIana(zone.id) : zone.label} (you)`;
     case 'zone': {
       const abbr = zoneAbbreviation(zone, now);
       const off = formatOffset(offsetAt(zone, now));
