@@ -33,7 +33,8 @@ function ssrZones(pageZones: ConverterZone[], isHome: boolean): ConverterZone[] 
 }
 
 export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow }: Props) {
-  const [state, setState] = useState<ConverterState>({ zones: ssrZones(pageZones, isHome), anchor: ssrNow, hour12: true });
+  // Live from the first render (`now` starts at the build time), so hydration doesn't swap the header.
+  const [state, setState] = useState<ConverterState>({ zones: ssrZones(pageZones, isHome), anchor: 'now', hour12: true });
   const [now, setNow] = useState(ssrNow);
   const [picking, setPicking] = useState(false);
   const [status, setStatus] = useState('');

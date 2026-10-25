@@ -11,7 +11,8 @@
     "test": "vitest run tests/unit",
     "test:dist": "vitest run tests/dist",
     "test:e2e": "playwright test",
-    "data": "tsx scripts/build-data.ts"
+    "data": "tsx scripts/build-data.ts",
+    "lighthouse": "tsx scripts/lighthouse.ts"
   },
   "dependencies": {
     "@astrojs/preact": "^6.1.1",
@@ -26,6 +27,7 @@
     "esbuild": "^0.28.2",
     "fflate": "^0.8.3",
     "happy-dom": "^21.0.4",
+    "lighthouse": "^13.5.0",
     "node-html-parser": "^9.0.5",
     "sharp": "^0.35.5",
     "tsx": "^4.23.15",

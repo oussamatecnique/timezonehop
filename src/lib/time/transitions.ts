@@ -56,8 +56,11 @@ export function observesDst(z: ZoneRef, year: number): boolean {
   return transitions(z, year).length >= 2;
 }
 
-/** The smallest offset the zone uses during the year (its standard time). */
+/**
+ * The zone's standard (non-DST) offset for the year: the smaller of its mid-January and
+ * mid-July offsets, since one of the two always falls outside DST in either hemisphere.
+ * Two lookups instead of a year-long scan: this runs in the browser on every clock.
+ */
 export function standardOffset(z: ZoneRef, year: number): number {
-  const start = offsetAt(z, Date.UTC(year, 0, 1));
-  return transitions(z, year).reduce((min, t) => Math.min(min, t.offsetAfter), start);
+  return Math.min(offsetAt(z, Date.UTC(year, 0, 15)), offsetAt(z, Date.UTC(year, 6, 15)));
 }
