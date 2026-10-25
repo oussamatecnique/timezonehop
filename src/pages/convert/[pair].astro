@@ -35,12 +35,12 @@ const noChanges =
   <h1>{view.h1}</h1>
   <p class="lede">{view.summary}</p>
   {
-    view.inEffectNote && (
+    (view.inEffectNote || view.cityEquivalent) && (
       <p class="callout">
         {view.inEffectNote}
         {view.cityEquivalent && (
           <>
-            {' '}
+            {view.inEffectNote && ' '}
             For local times that follow daylight saving, use the{' '}
             <a href={urlOf(view.cityEquivalent)}>{pairLink(view.cityEquivalent).label} converter</a>.
           </>
