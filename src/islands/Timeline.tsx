@@ -1,5 +1,5 @@
-import { useRef } from 'preact/hooks';
-import { zonedParts, zonedToInstant, type ZoneRef } from '../lib/time/zone';
+import { useMemo, useRef } from 'preact/hooks';
+import { zoneKey, zonedParts, zonedToInstant, type ZoneRef } from '../lib/time/zone';
 import { formatDate, formatTime } from '../lib/time/format';
 import { STEP, fractionToInstant, instantToFraction, snap, type Range } from './converter/timeline';
 
@@ -8,8 +8,12 @@ interface Props {
   zoneLabel: string;
   range: Range;
   instant: number;
+  /** Where the thumb sits, 0–1: under the pointer while dragging, at the (snapped) instant otherwise. */
+  fraction: number;
   hour12: boolean;
   onChange: (instant: number) => void;
+  /** The unsnapped pointer position while dragging; null when the drag ends. */
+  onScrub: (fraction: number | null) => void;
   /** Called with the final instant when a drag ends (keyboard changes are announced by aria-valuetext). */
   onCommit: (instant: number) => void;
   onDay: (dir: -1 | 1) => void;
@@ -19,20 +23,31 @@ const MINUTE = 60_000;
 
 export default function Timeline(p: Props) {
   const track = useRef<HTMLDivElement>(null);
-  const dragging = useRef(false);
+  // While dragging: pointer x minus the thumb centre at pointerdown, so a grabbed thumb doesn't jump.
+  const grab = useRef<number | null>(null);
   const last = useRef(p.instant);
-  const fraction = instantToFraction(p.instant, p.range);
-  const day = zonedParts(p.zone, p.range.start);
-  const ticks = [0, 6, 12, 18].map(hour => {
-    const t = zonedToInstant(p.zone, { year: day.year, month: day.month, day: day.day, hour, minute: 0 });
-    const label = p.hour12 ? formatTime(p.zone, t, { hour12: true }).replace(':00', '') : `${String(hour).padStart(2, '0')}:00`;
-    return { left: instantToFraction(t, p.range), label };
-  });
+  const ticks = useMemo(() => {
+    const day = zonedParts(p.zone, p.range.start);
+    return [0, 6, 12, 18].map(hour => {
+      const t = zonedToInstant(p.zone, { year: day.year, month: day.month, day: day.day, hour, minute: 0 });
+      const label = p.hour12 ? formatTime(p.zone, t, { hour12: true }).replace(':00', '') : `${String(hour).padStart(2, '0')}:00`;
+      return { left: instantToFraction(t, p.range), label };
+    });
+  }, [zoneKey(p.zone), p.range.start, p.range.end, p.hour12]);
 
   const fromPointer = (clientX: number) => {
     const rect = track.current!.getBoundingClientRect();
-    last.current = fractionToInstant((clientX - rect.left) / rect.width, p.range);
+    const f = Math.min(1, Math.max(0, (clientX - grab.current! - rect.left) / rect.width));
+    last.current = fractionToInstant(f, p.range);
+    p.onScrub(f);
     p.onChange(last.current);
+  };
+
+  const endDrag = (commit: boolean) => {
+    if (grab.current === null) return;
+    grab.current = null;
+    p.onScrub(null);
+    if (commit) p.onCommit(last.current);
   };
 
   const onKeyDown = (e: KeyboardEvent) => {
@@ -84,16 +99,16 @@ export default function Timeline(p: Props) {
         class="timeline__track"
         ref={track}
         onPointerDown={e => {
-          dragging.current = true;
+          if (e.button !== 0) return;
+          const rect = track.current!.getBoundingClientRect();
+          const onThumb = (e.target as Element).closest('.timeline__thumb');
+          grab.current = onThumb ? e.clientX - (rect.left + p.fraction * rect.width) : 0;
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           fromPointer(e.clientX);
         }}
-        onPointerMove={e => dragging.current && fromPointer(e.clientX)}
-        onPointerUp={() => {
-          if (dragging.current) p.onCommit(last.current);
-          dragging.current = false;
-        }}
-        onPointerCancel={() => (dragging.current = false)}
+        onPointerMove={e => grab.current !== null && fromPointer(e.clientX)}
+        onPointerUp={() => endDrag(true)}
+        onPointerCancel={() => endDrag(false)}
       >
         <div class="timeline__rail" />
         {ticks.map(t => (
@@ -101,7 +116,7 @@ export default function Timeline(p: Props) {
             {t.label}
           </span>
         ))}
-        <div class="timeline__thumb-wrap" style={{ transform: `translateX(${fraction * 100}%)` }}>
+        <div class="timeline__thumb-wrap" style={{ transform: `translateX(${p.fraction * 100}%)` }}>
           <div
             class="timeline__thumb"
             role="slider"

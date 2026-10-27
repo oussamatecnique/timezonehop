@@ -46,3 +46,29 @@ test('touch targets are at least 44px', async ({ page }) => {
     expect(box.width, selector).toBeGreaterThanOrEqual(44);
   }
 });
+
+test('a grabbed thumb follows the pointer without jumping, then settles on a 15-minute time', async ({ page }) => {
+  await page.goto('/');
+  await hydrated(page);
+  const slider = page.getByRole('slider');
+  await slider.scrollIntoViewIfNeeded();
+  const thumb = (await slider.boundingBox())!;
+  const track = (await page.locator('.timeline__track').boundingBox())!;
+  // The thumb wrap's horizontal offset in px (the live clock nudges it by a hair each second).
+  const offset = () => page.locator('.timeline__thumb-wrap').evaluate(el => new DOMMatrix(getComputedStyle(el).transform).m41);
+  const before = await offset();
+  // Grab the thumb off-centre: pressing alone mustn't move it.
+  const x = thumb.x + thumb.width / 2 + 6;
+  const y = thumb.y + thumb.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await expect(page.locator('.converter--scrubbing')).toHaveCount(1);
+  expect(Math.abs((await offset()) - before)).toBeLessThan(0.5);
+  // Then it moves exactly with the pointer, not in 15-minute steps.
+  const dx = before > track.width / 2 ? -37 : 37;
+  await page.mouse.move(x + dx, y, { steps: 5 });
+  expect(Math.abs((await offset()) - (before + dx))).toBeLessThan(0.5);
+  await page.mouse.up();
+  await expect(page.locator('.converter--glide')).toHaveCount(1);
+  await expect(page.locator('[data-zone-row]').nth(0).locator('.zone-row__clock')).toHaveText(/:(00|15|30|45) [AP]M$/);
+});

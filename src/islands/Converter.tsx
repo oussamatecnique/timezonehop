@@ -1,5 +1,5 @@
 /**
- * The time zone converter island: 2–6 zone rows, a draggable timeline, share links.
+ * The time zone converter island: 2–6 zone rows, a draggable timeline, a typed-time field, share links.
  * Server-rendered with stable defaults; personalized (visitor zone, saved zones, share URL) after mount.
  */
 import { useEffect, useRef, useState } from 'preact/hooks';
@@ -13,6 +13,7 @@ import {
 import { dayRange, instantToFraction, shiftDay } from './converter/timeline';
 import ZoneRow from './ZoneRow';
 import Timeline from './Timeline';
+import TimeEntry from './TimeEntry';
 import SearchBox, { loadIndex } from './SearchBox';
 
 interface Props {
@@ -34,6 +35,10 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const [shareUrl, setShareUrl] = useState('');
   // False for the server render and the hydration pass: rows then carry the clock script's markers.
   const [hydrated, setHydrated] = useState(false);
+  // The thumb's unsnapped position while dragging, so it follows the pointer instead of stepping.
+  const [scrub, setScrub] = useState<number | null>(null);
+  // Thumb and markers glide to new times, but only after mount: the jump from build time to now shouldn't sweep.
+  const [glide, setGlide] = useState(false);
   const mounted = useRef(false);
 
   // Personalize after mount: visitor zone, saved zones, share link, 12/24h, live clock.
@@ -65,6 +70,8 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
     setNow(Date.now());
     setHydrated(true);
     mounted.current = true;
+    // Two frames: the personalized positions get painted first, then transitions switch on.
+    requestAnimationFrame(() => requestAnimationFrame(() => setGlide(true)));
 
     let timer: ReturnType<typeof setInterval> | undefined;
     const start = () => {
@@ -88,7 +95,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const instant = state.anchor === 'now' ? now : state.anchor;
   const zone0 = refOf(state.zones[0]);
   const range = dayRange(zone0, instant);
-  const fraction = instantToFraction(instant, range);
+  const fraction = scrub ?? instantToFraction(instant, range);
   const update = (f: (s: ConverterState) => ConverterState) => setState(s => f(s));
 
   const add = (z: ConverterZone) => {
@@ -118,7 +125,10 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const announce = (t: number) => setStatus(`${formatTime(zone0, t, { hour12: state.hour12 })} in ${state.zones[0].label}`);
 
   return (
-    <section class="converter" aria-labelledby="converter-title">
+    <section
+      class={`converter${scrub !== null ? ' converter--scrubbing' : glide ? ' converter--glide' : ''}`}
+      aria-labelledby="converter-title"
+    >
       <div class="converter__head">
         <h2 id="converter-title">{title}</h2>
         {state.anchor === 'now' ? (
@@ -159,10 +169,23 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
         zoneLabel={state.zones[0].label}
         range={range}
         instant={instant}
+        fraction={fraction}
         hour12={state.hour12}
         onChange={t => update(s => ({ ...s, anchor: t }))}
+        onScrub={setScrub}
         onCommit={announce}
         onDay={dir => update(s => ({ ...s, anchor: shiftDay(zone0, instant, dir) }))}
+      />
+
+      <TimeEntry
+        zones={state.zones.map(z => ({ key: z.key, label: z.label, ref: refOf(z) }))}
+        instant={instant}
+        hour12={state.hour12}
+        hydrated={hydrated}
+        onSet={t => {
+          update(s => ({ ...s, anchor: t }));
+          announce(t);
+        }}
       />
 
       <div class="converter__actions">

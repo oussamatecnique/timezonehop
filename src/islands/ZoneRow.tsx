@@ -1,4 +1,5 @@
-import { offsetAt, zonedParts, type ZoneRef } from '../lib/time/zone';
+import { useMemo } from 'preact/hooks';
+import { offsetAt, zoneKey, zonedParts, type ZoneRef } from '../lib/time/zone';
 import { formatDate, formatDifference, formatOffset, formatTime, zoneAbbreviation } from '../lib/time/format';
 import { skyPhase, skyStrip } from '../lib/time/sky';
 import { dayShift, type Range } from './converter/timeline';
@@ -56,7 +57,8 @@ export default function ZoneRow(p: Props) {
     : diff === 0
       ? 'same time'
       : `${formatDifference(diff)} ${diff > 0 ? 'ahead' : 'behind'}`;
-  const { background, work } = stripFor(p.zone, p.range);
+  // Depends only on the zone and the day, so dragging doesn't recompute it.
+  const { background, work } = useMemo(() => stripFor(p.zone, p.range), [zoneKey(p.zone), p.range.start, p.range.end]);
   const isVisitor = p.zoneKey === 'visitor';
   const clock = (format: string) => (p.serverRendered ? { 'data-clock': '', 'data-format': format } : {});
   const host = p.serverRendered
