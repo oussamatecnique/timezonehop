@@ -21,7 +21,6 @@
   --accent-soft: #e4e8fc;
   --accent-ink: #ffffff;
   --sun: #ffb627;
-  --danger: #b42318;
 
   --font: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
@@ -65,7 +64,6 @@
     --accent-soft: #1f2a5c;
     --accent-ink: #0e1430;
     --sun: #ffc94d;
-    --danger: #ff9d8f;
     color-scheme: dark;
   }
 }
@@ -80,7 +78,6 @@
   --accent-soft: #1f2a5c;
   --accent-ink: #0e1430;
   --sun: #ffc94d;
-  --danger: #ff9d8f;
   color-scheme: dark;
 }
 

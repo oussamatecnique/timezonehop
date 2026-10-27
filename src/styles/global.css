@@ -660,9 +660,10 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
   appearance: none;
 }
 .field:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
-.field[aria-invalid='true'] { border-color: var(--danger); }
-.time-entry__time { width: 8.5em; font-variant-numeric: tabular-nums; }
-.time-entry__time::placeholder { color: var(--muted); }
+.time-entry__time { min-width: 8.5em; font-variant-numeric: tabular-nums; cursor: text; }
+/* iOS centres the value of a native time field; keep it in line with the other fields. */
+.time-entry__time::-webkit-date-and-time-value { text-align: left; }
+.time-entry__time::-webkit-calendar-picker-indicator { cursor: pointer; }
 .time-entry__select { position: relative; min-width: 0; }
 .time-entry__select .field {
   max-width: 100%;
@@ -685,10 +686,7 @@ a.sky-card--mini:hover { outline: 2px solid var(--accent); outline-offset: 2px; 
   stroke-linejoin: round;
   pointer-events: none;
 }
-.time-entry__error,
-.time-entry__note { flex-basis: 100%; font-size: var(--step--1); font-weight: 600; }
-.time-entry__error { color: var(--danger); }
-.time-entry__note { color: var(--muted); }
+.time-entry__note { flex-basis: 100%; color: var(--muted); font-size: var(--step--1); font-weight: 600; }
 
 .converter__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .converter__hint { color: var(--muted); font-size: var(--step--1); font-weight: 600; margin-top: calc(var(--space-2) * -1); }
