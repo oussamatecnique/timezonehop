@@ -16,6 +16,7 @@ test('header search navigates and converter add-city picks', async ({ page }) =>
   await page.getByRole('button', { name: /add city/i }).click();
   await expect(page.locator('#add-city-search')).toBeFocused();
   await page.keyboard.type('dubai');
+  await expect(page.getByRole('option').first()).toContainText('Dubai'); // Enter before results load picks nothing
   await page.keyboard.press('Enter');
   await expect(page.locator('[data-zone-row]')).toHaveCount(2);
 });

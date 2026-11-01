@@ -7,7 +7,8 @@ import { iana, zoneFromKey, type ZoneRef } from '../lib/time/zone';
 import { formatTime } from '../lib/time/format';
 import { effectiveHour12, loadPrefs, savePrefs } from '../lib/prefs';
 import {
-  MAX_ZONES, addZone, initialZones, makeResolver, moveZone, parseShare, removeZone, serializeShare, serverZones,
+  MAX_ZONES, addZone, duplicateNotice, initialZones, listedZone, makeResolver, moveZone, parseShare, removeZone,
+  serializeShare, serverZones,
   swapFirstTwo, type ConverterState, type ConverterZone,
 } from './converter/state';
 import { dayRange, instantToFraction, shiftDay } from './converter/timeline';
@@ -39,6 +40,9 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const [scrub, setScrub] = useState<number | null>(null);
   // Thumb and markers glide to new times, but only after mount: the jump from build time to now shouldn't sweep.
   const [glide, setGlide] = useState(false);
+  // The row a picked city already shares its time zone with, highlighted briefly.
+  const [flashKey, setFlashKey] = useState<string | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const mounted = useRef(false);
 
   // Personalize after mount: visitor zone, saved zones, share link, 12/24h, live clock.
@@ -99,8 +103,23 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const update = (f: (s: ConverterState) => ConverterState) => setState(s => f(s));
 
   const add = (z: ConverterZone) => {
-    update(s => addZone(s, z));
     setPicking(false);
+    const listed = listedZone(state, z);
+    if (!listed) {
+      update(s => addZone(s, z));
+      return;
+    }
+    // Same time zone as a listed row (Rabat vs Casablanca): say so instead of silently doing nothing.
+    const notice = duplicateNotice(z, listed);
+    setShareUrl('');
+    setStatus(notice);
+    setFlashKey(null);
+    requestAnimationFrame(() => setFlashKey(listed.key)); // restarts the highlight on a repeat pick
+    clearTimeout(noticeTimer.current);
+    noticeTimer.current = setTimeout(() => {
+      setFlashKey(null);
+      setStatus(s => (s === notice ? '' : s));
+    }, 6000);
   };
 
   const copyLink = async () => {
@@ -150,6 +169,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
             zone={refOf(z)}
             reference={zone0}
             isFirst={i === 0}
+            flash={z.key === flashKey}
             instant={instant}
             range={range}
             fraction={fraction}

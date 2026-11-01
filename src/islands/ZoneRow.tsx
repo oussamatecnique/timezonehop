@@ -16,6 +16,8 @@ interface Props {
   zone: ZoneRef;
   reference: ZoneRef;
   isFirst: boolean;
+  /** Briefly highlighted: a picked city shares this row's time zone. */
+  flash?: boolean;
   instant: number;
   range: Range;
   fraction: number;
@@ -66,7 +68,7 @@ export default function ZoneRow(p: Props) {
     : {};
 
   return (
-    <li class="zone-row" data-zone-row {...host}>
+    <li class={p.flash ? 'zone-row zone-row--flash' : 'zone-row'} data-zone-row {...host}>
       <div class="zone-row__top">
         <div class="zone-row__name">
           <strong {...(isVisitor ? clock('you-place') : {})}>{p.label}</strong>

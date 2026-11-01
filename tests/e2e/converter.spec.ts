@@ -25,3 +25,23 @@ test('converter: keyboard, add a city, swap, copy link', async ({ page, context 
   await page.getByRole('button', { name: /copy link/i }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\?t=\d{4}-\d\d-\d\dT\d\d:\d\dZ&z=/);
 });
+
+test.describe('a city sharing a listed time zone', () => {
+  test.use({ timezoneId: 'Africa/Casablanca' });
+
+  test('is explained instead of silently ignored', async ({ page }) => {
+    await page.goto('/');
+    await hydrated(page);
+    const rows = page.locator('[data-zone-row]');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.nth(0)).toContainText('Casablanca (you)');
+    await page.getByRole('button', { name: 'Add city or timezone' }).click();
+    await expect(page.locator('#add-city-search')).toBeFocused();
+    await page.keyboard.type('rabat');
+    await expect(page.getByRole('option').first()).toContainText('Rabat');
+    await page.keyboard.press('Enter');
+    await expect(rows).toHaveCount(1);
+    await expect(page.getByRole('status')).toHaveText('Rabat is in the same time zone as Casablanca (you), which is already listed.');
+    await expect(rows.nth(0)).toHaveClass(/zone-row--flash/);
+  });
+});

@@ -30,6 +30,19 @@ export function addZone(s: ConverterState, z: ConverterZone): ConverterState {
   return { ...s, zones: [...s.zones, z] };
 }
 
+/** The listed zone that already shows `z`'s time, if any (cities sharing a zone, like Rabat and Casablanca, share a key). */
+export function listedZone(s: ConverterState, z: ConverterZone): ConverterZone | undefined {
+  return s.zones.find(x => x.key === z.key);
+}
+
+/** Tells the visitor why picking `picked` added no row. */
+export function duplicateNotice(picked: ConverterZone, listed: ConverterZone): string {
+  const sameName = picked.label === listed.label || `${picked.label} (you)` === listed.label;
+  return sameName
+    ? `${picked.label} is already listed.`
+    : `${picked.label} is in the same time zone as ${listed.label}, which is already listed.`;
+}
+
 export function removeZone(s: ConverterState, i: number): ConverterState {
   if (s.zones.length <= MIN_ZONES || i < 0 || i >= s.zones.length) return s;
   return { ...s, zones: s.zones.filter((_, j) => j !== i) };

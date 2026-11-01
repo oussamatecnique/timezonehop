@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  addZone, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, makeResolver, serverZones, MAX_ZONES,
+  addZone, listedZone, duplicateNotice, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, makeResolver, serverZones, MAX_ZONES,
 } from '../../../src/islands/converter/state';
 
 const z = (key: string, token?: string) => ({ key, label: key, token });
@@ -18,6 +18,17 @@ describe('state', () => {
     expect(removeZone(one, 0).zones).toHaveLength(1); // never empty
     expect(swapFirstTwo(base).zones.map(x => x.key)).toEqual(['Europe/London', 'America/New_York']);
     expect(swapFirstTwo(one)).toEqual(one);
+  });
+
+  it('explains why a city sharing a listed time zone is not added', () => {
+    const s = { ...base, zones: [{ key: 'Africa/Casablanca', label: 'Casablanca (you)' }, z('Europe/London')] };
+    const rabat = { key: 'Africa/Casablanca', label: 'Rabat', token: 'rabat' };
+    expect(addZone(s, rabat)).toBe(s);
+    expect(listedZone(s, rabat)?.label).toBe('Casablanca (you)');
+    expect(listedZone(s, z('Asia/Tokyo'))).toBeUndefined();
+    expect(duplicateNotice(rabat, listedZone(s, rabat)!)).toBe('Rabat is in the same time zone as Casablanca (you), which is already listed.');
+    expect(duplicateNotice({ key: 'Africa/Casablanca', label: 'Casablanca' }, listedZone(s, rabat)!)).toBe('Casablanca is already listed.');
+    expect(duplicateNotice(z('Europe/London'), z('Europe/London'))).toBe('Europe/London is already listed.');
   });
 
   it('serializes and parses share links defensively', () => {
