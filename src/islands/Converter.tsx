@@ -7,8 +7,8 @@ import { iana, zoneFromKey, type ZoneRef } from '../lib/time/zone';
 import { formatTime } from '../lib/time/format';
 import { effectiveHour12, loadPrefs, savePrefs } from '../lib/prefs';
 import {
-  MAX_ZONES, addZone, duplicateNotice, initialZones, listedZone, makeResolver, moveZone, parseShare, removeZone,
-  serializeShare, serverZones,
+  MAX_ZONES, addZone, initialZones, listedZone, makeResolver, moveZone, parseShare, removeZone, rowKey,
+  serializeShare, serverZones, toSaved,
   swapFirstTwo, type ConverterState, type ConverterZone,
 } from './converter/state';
 import { dayRange, instantToFraction, shiftDay } from './converter/timeline';
@@ -40,7 +40,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
   const [scrub, setScrub] = useState<number | null>(null);
   // Thumb and markers glide to new times, but only after mount: the jump from build time to now shouldn't sweep.
   const [glide, setGlide] = useState(false);
-  // The row a picked city already shares its time zone with, highlighted briefly.
+  // The row a picked city or zone duplicates, highlighted briefly (a rowKey).
   const [flashKey, setFlashKey] = useState<string | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const mounted = useRef(false);
@@ -93,7 +93,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
 
   // Remember the home page's zones.
   useEffect(() => {
-    if (mounted.current && isHome) savePrefs({ savedZones: state.zones.map(z => z.key) });
+    if (mounted.current && isHome) savePrefs({ savedZones: state.zones.map(toSaved) });
   }, [state.zones]);
 
   const instant = state.anchor === 'now' ? now : state.anchor;
@@ -109,12 +109,12 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
       update(s => addZone(s, z));
       return;
     }
-    // Same time zone as a listed row (Rabat vs Casablanca): say so instead of silently doing nothing.
-    const notice = duplicateNotice(z, listed);
+    // Already listed (the same city, or UTC under another key): say so instead of silently doing nothing.
+    const notice = `${z.label} is already listed.`;
     setShareUrl('');
     setStatus(notice);
     setFlashKey(null);
-    requestAnimationFrame(() => setFlashKey(listed.key)); // restarts the highlight on a repeat pick
+    requestAnimationFrame(() => setFlashKey(rowKey(listed))); // restarts the highlight on a repeat pick
     clearTimeout(noticeTimer.current);
     noticeTimer.current = setTimeout(() => {
       setFlashKey(null);
@@ -162,14 +162,14 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
       <ol class="zone-rows">
         {state.zones.map((z, i) => (
           <ZoneRow
-            key={z.key}
+            key={rowKey(z)}
             label={z.label}
             zoneKey={z.key}
             serverRendered={!hydrated}
             zone={refOf(z)}
             reference={zone0}
             isFirst={i === 0}
-            flash={z.key === flashKey}
+            flash={rowKey(z) === flashKey}
             instant={instant}
             range={range}
             fraction={fraction}
@@ -198,7 +198,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
       />
 
       <TimeEntry
-        zones={state.zones.map(z => ({ key: z.key, label: z.label, ref: refOf(z) }))}
+        zones={state.zones.map(z => ({ key: rowKey(z), label: z.label, ref: refOf(z) }))}
         instant={instant}
         hour12={state.hour12}
         hydrated={hydrated}
@@ -240,7 +240,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
           <p class="picker__hint">Or pick a popular one</p>
           <ul class="chips">
             {quickPicks
-              .filter(q => !state.zones.some(z => z.key === q.key))
+              .filter(q => !listedZone(state, q))
               .map(q => (
                 <li>
                   <button type="button" class="chip" onClick={() => add(q)}>

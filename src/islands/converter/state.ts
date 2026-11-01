@@ -1,6 +1,7 @@
 /** Converter state transitions and share links. Pure functions, unit-tested. */
 import { isValidIana, zoneFromKey } from '../../lib/time/zone';
 import { formatOffset, labelFromIana } from '../../lib/time/format';
+import type { SavedZone } from '../../lib/prefs';
 
 export interface ConverterZone {
   /** Zone key: IANA id or 'fixed:<minutes>' */
@@ -24,23 +25,31 @@ export const UTC_ZONE: ConverterZone = { key: 'UTC', label: 'UTC', token: 'utc' 
 export const VISITOR_PLACEHOLDER: ConverterZone = { key: 'visitor', label: 'Your time' };
 
 const isUtcKey = (k: string) => k === 'UTC' || k === 'Etc/UTC' || k === 'fixed:0';
+/** UTC has several keys ('UTC' for the quick pick, 'fixed:0' for the search entry); they are one clock. */
+const sameClock = (a: string, b: string) => a === b || (isUtcKey(a) && isUtcKey(b));
+const YOU = / \(you\)$/;
+const placeName = (label: string) => label.replace(YOU, '').toLowerCase();
+
+/**
+ * True when two entries make the same row: the same city, or the same named zone under another key
+ * (UTC from the quick pick and from search). Different cities sharing a zone, like Casablanca and
+ * Rabat, are different rows.
+ */
+export function sameZone(a: ConverterZone, b: ConverterZone): boolean {
+  return sameClock(a.key, b.key) && placeName(a.label) === placeName(b.label);
+}
+
+/** A row's stable id: keys repeat when two cities share a zone. */
+export const rowKey = (z: ConverterZone) => `${z.key}|${z.label}`;
+
+/** The listed row `z` would duplicate, if any. */
+export function listedZone(s: ConverterState, z: ConverterZone): ConverterZone | undefined {
+  return s.zones.find(x => sameZone(x, z));
+}
 
 export function addZone(s: ConverterState, z: ConverterZone): ConverterState {
-  if (s.zones.length >= MAX_ZONES || s.zones.some(x => x.key === z.key)) return s;
+  if (s.zones.length >= MAX_ZONES || listedZone(s, z)) return s;
   return { ...s, zones: [...s.zones, z] };
-}
-
-/** The listed zone that already shows `z`'s time, if any (cities sharing a zone, like Rabat and Casablanca, share a key). */
-export function listedZone(s: ConverterState, z: ConverterZone): ConverterZone | undefined {
-  return s.zones.find(x => x.key === z.key);
-}
-
-/** Tells the visitor why picking `picked` added no row. */
-export function duplicateNotice(picked: ConverterZone, listed: ConverterZone): string {
-  const sameName = picked.label === listed.label || `${picked.label} (you)` === listed.label;
-  return sameName
-    ? `${picked.label} is already listed.`
-    : `${picked.label} is in the same time zone as ${listed.label}, which is already listed.`;
 }
 
 export function removeZone(s: ConverterState, i: number): ConverterState {
@@ -84,7 +93,7 @@ export function parseShare(
   for (const token of tokens) {
     if (zones.length >= MAX_ZONES) break;
     const z = resolve(token);
-    if (z && !zones.some(x => x.key === z.key)) zones.push(z);
+    if (z && !zones.some(x => sameZone(x, z))) zones.push(z);
   }
   if (zones.length >= MIN_ZONES) out.zones = zones;
   return out;
@@ -124,15 +133,28 @@ export function zoneFromSavedKey(key: string): ConverterZone | null {
   return { key, label: ref.kind === 'fixed' ? formatOffset(ref.offsetMinutes) : labelFromIana(key) };
 }
 
-export function initialZones(o: { pageZones: ConverterZone[]; visitorTz: string; saved: string[]; isHome: boolean }): ConverterZone[] {
+/** What the home page remembers about a row. "(you)" isn't stored: the visitor may be elsewhere next time. */
+export function toSaved(z: ConverterZone): SavedZone {
+  return { key: z.key, label: z.label.replace(YOU, ''), ...(z.token && { token: z.token }) };
+}
+
+function fromSaved(s: SavedZone): ConverterZone | null {
+  const z = zoneFromSavedKey(s.key);
+  if (!z || !s.label) return z;
+  return { key: s.key, label: s.label.replace(YOU, ''), ...(s.token && { token: s.token }) };
+}
+
+export function initialZones(o: { pageZones: ConverterZone[]; visitorTz: string; saved: SavedZone[]; isHome: boolean }): ConverterZone[] {
   const visitor: ConverterZone | null = isValidIana(o.visitorTz)
     ? { key: o.visitorTz, label: `${labelFromIana(o.visitorTz)} (you)` }
     : null;
 
   if (o.isHome) {
+    const isVisitor = (s: SavedZone) => visitor && s.key === visitor.key && (!s.label || placeName(s.label) === placeName(visitor.label));
     const saved = o.saved
-      .map(k => (visitor && k === visitor.key ? visitor : zoneFromSavedKey(k)))
-      .filter((z): z is ConverterZone => z !== null);
+      .map(s => (isVisitor(s) ? visitor : fromSaved(s)))
+      .filter((z): z is ConverterZone => z !== null)
+      .filter((z, i, all) => all.findIndex(x => sameZone(x, z)) === i);
     if (saved.length >= MIN_ZONES) return saved.slice(0, MAX_ZONES);
     return [visitor ?? UTC_ZONE];
   }

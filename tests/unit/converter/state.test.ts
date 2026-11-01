@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import {
-  addZone, listedZone, duplicateNotice, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, makeResolver, serverZones, MAX_ZONES,
+  addZone, listedZone, rowKey, toSaved, removeZone, swapFirstTwo, serializeShare, parseShare, initialZones, makeResolver,
+  serverZones, MAX_ZONES, type ConverterState,
 } from '../../../src/islands/converter/state';
 
 const z = (key: string, token?: string) => ({ key, label: key, token });
-const base = { zones: [z('America/New_York', 'new-york'), z('Europe/London', 'london')], anchor: 'now' as const, hour12: true };
+const base: ConverterState = { zones: [z('America/New_York', 'new-york'), z('Europe/London', 'london')], anchor: 'now', hour12: true };
 const keys = (zones: { key: string }[]) => zones.map(x => x.key);
+const labels = (zones: { label: string }[]) => zones.map(x => x.label);
 
 describe('state', () => {
   it('enforces limits and uniqueness', () => {
@@ -20,15 +22,24 @@ describe('state', () => {
     expect(swapFirstTwo(one)).toEqual(one);
   });
 
-  it('explains why a city sharing a listed time zone is not added', () => {
-    const s = { ...base, zones: [{ key: 'Africa/Casablanca', label: 'Casablanca (you)' }, z('Europe/London')] };
+  it('adds other cities in a listed time zone but not the same city or named zone twice', () => {
+    const you = { key: 'Africa/Casablanca', label: 'Casablanca (you)' };
+    const s = { ...base, zones: [you] };
     const rabat = { key: 'Africa/Casablanca', label: 'Rabat', token: 'rabat' };
-    expect(addZone(s, rabat)).toBe(s);
-    expect(listedZone(s, rabat)?.label).toBe('Casablanca (you)');
-    expect(listedZone(s, z('Asia/Tokyo'))).toBeUndefined();
-    expect(duplicateNotice(rabat, listedZone(s, rabat)!)).toBe('Rabat is in the same time zone as Casablanca (you), which is already listed.');
-    expect(duplicateNotice({ key: 'Africa/Casablanca', label: 'Casablanca' }, listedZone(s, rabat)!)).toBe('Casablanca is already listed.');
-    expect(duplicateNotice(z('Europe/London'), z('Europe/London'))).toBe('Europe/London is already listed.');
+    const casablanca = { key: 'Africa/Casablanca', label: 'Casablanca', token: 'casablanca' };
+    expect(labels(addZone(s, rabat).zones)).toEqual(['Casablanca (you)', 'Rabat']);
+    expect(addZone(s, casablanca)).toBe(s);
+    expect(listedZone(s, casablanca)).toBe(you);
+    expect(listedZone(s, rabat)).toBeUndefined();
+    // UTC has two keys: 'UTC' (the quick pick) and 'fixed:0' (the search entry).
+    const utcChip = { key: 'UTC', label: 'UTC', token: 'utc' };
+    const utcSearch = { key: 'fixed:0', label: 'UTC', token: 'utc' };
+    const withUtc = addZone(s, utcChip);
+    expect(addZone(withUtc, utcSearch)).toBe(withUtc);
+    expect(addZone({ ...s, zones: [{ key: 'UTC', label: 'UTC (you)' }] }, utcSearch).zones).toHaveLength(1);
+    expect(labels(addZone(withUtc, { key: 'fixed:0', label: 'GMT', token: 'gmt' }).zones)).toEqual(['Casablanca (you)', 'UTC', 'GMT']);
+    // Rows need distinct ids once keys repeat.
+    expect(rowKey(you)).not.toBe(rowKey(rabat));
   });
 
   it('serializes and parses share links defensively', () => {
@@ -44,6 +55,13 @@ describe('state', () => {
     expect(parseShare('?z=nowhere', resolve)).toEqual({}); // no valid zone -> ignored
     expect(keys(parseShare('?z=tokyo', resolve).zones!)).toEqual(['tokyo']); // one zone is enough
     expect(parseShare('?t=2031-01-01T00:00Z', resolve).anchor).toBe(Date.UTC(2031, 0, 1)); // far future is allowed
+    // Two cities in one zone survive a share link; one zone under two keys does not.
+    const cities = makeResolver([], [
+      { n: 'Casablanca', u: '/time/casablanca', z: 'Africa/Casablanca' },
+      { n: 'Rabat', u: '/time/rabat', z: 'Africa/Casablanca' },
+      { n: 'UTC', u: '/timezone/utc', z: 'fixed:0' },
+    ]);
+    expect(labels(parseShare('?z=casablanca,rabat,UTC,utc', cities).zones!)).toEqual(['Casablanca', 'Rabat', 'UTC']);
   });
 
   it('resolves share tokens safely', () => {
@@ -83,11 +101,28 @@ describe('state', () => {
     expect(initialZones({ pageZones: [], visitorTz: 'UTC', saved: [], isHome: true }).map(x => [x.key, x.label]))
       .toEqual([['UTC', 'UTC (you)']]);
     expect(keys(initialZones({ pageZones: [], visitorTz: 'garbage', saved: [], isHome: true }))).toEqual(['UTC']);
-    expect(keys(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: ['Asia/Dubai', 'Europe/Paris'], isHome: true })))
+    const legacy = (...k: string[]) => k.map(key => ({ key })); // saved before labels were stored
+    expect(keys(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: legacy('Asia/Dubai', 'Europe/Paris'), isHome: true })))
       .toEqual(['Asia/Dubai', 'Europe/Paris']);
-    expect(keys(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: ['Asia/Dubai'], isHome: true }))).toEqual(['Asia/Dubai']);
+    expect(keys(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: legacy('Asia/Dubai'), isHome: true }))).toEqual(['Asia/Dubai']);
     // A returning visitor's own saved zone keeps its "(you)" label.
-    expect(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: ['Asia/Tokyo', 'Asia/Dubai'], isHome: true }).map(x => x.label))
+    expect(labels(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: legacy('Asia/Tokyo', 'Asia/Dubai'), isHome: true })))
       .toEqual(['Tokyo (you)', 'Dubai']);
+  });
+
+  it('restores saved cities by name, so two cities in one zone stay two rows', () => {
+    const rows = [
+      { key: 'Africa/Casablanca', label: 'Casablanca (you)' },
+      { key: 'Africa/Casablanca', label: 'Rabat', token: 'rabat' },
+      { key: 'fixed:0', label: 'UTC', token: 'utc' },
+    ];
+    const saved = rows.map(toSaved);
+    expect(saved[0]).toEqual({ key: 'Africa/Casablanca', label: 'Casablanca' }); // "(you)" isn't stored
+    expect(initialZones({ pageZones: [], visitorTz: 'Africa/Casablanca', saved, isHome: true })).toEqual(rows);
+    // After moving away, the old home city is just a city.
+    expect(labels(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved, isHome: true }))).toEqual(['Casablanca', 'Rabat', 'UTC']);
+    // Duplicates in storage collapse.
+    expect(labels(initialZones({ pageZones: [], visitorTz: 'Asia/Tokyo', saved: [...saved, ...saved], isHome: true })))
+      .toEqual(['Casablanca', 'Rabat', 'UTC']);
   });
 });

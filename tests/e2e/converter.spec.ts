@@ -26,22 +26,52 @@ test('converter: keyboard, add a city, swap, copy link', async ({ page, context 
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\?t=\d{4}-\d\d-\d\dT\d\d:\d\dZ&z=/);
 });
 
-test.describe('a city sharing a listed time zone', () => {
+test.describe('duplicates', () => {
   test.use({ timezoneId: 'Africa/Casablanca' });
 
-  test('is explained instead of silently ignored', async ({ page }) => {
+  const searchAdd = async (page: Page, query: string, first: string) => {
+    await page.getByRole('button', { name: 'Add city or timezone' }).click();
+    await expect(page.locator('#add-city-search')).toBeFocused();
+    await page.keyboard.type(query);
+    // Scoped: the typed-time <select> has options too once there are two rows.
+    await expect(page.locator('.picker').getByRole('option').first()).toContainText(first);
+    await page.keyboard.press('Enter');
+  };
+
+  test('another city in the same zone is added; the same city or UTC twice is explained', async ({ page }) => {
     await page.goto('/');
     await hydrated(page);
     const rows = page.locator('[data-zone-row]');
     await expect(rows).toHaveCount(1);
     await expect(rows.nth(0)).toContainText('Casablanca (you)');
-    await page.getByRole('button', { name: 'Add city or timezone' }).click();
-    await expect(page.locator('#add-city-search')).toBeFocused();
-    await page.keyboard.type('rabat');
-    await expect(page.getByRole('option').first()).toContainText('Rabat');
-    await page.keyboard.press('Enter');
-    await expect(rows).toHaveCount(1);
-    await expect(page.getByRole('status')).toHaveText('Rabat is in the same time zone as Casablanca (you), which is already listed.');
+
+    // Rabat shares Casablanca's zone but is a different city.
+    await searchAdd(page, 'rabat', 'Rabat');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(1)).toContainText('Rabat');
+
+    // The same city again is refused, with a reason and the listed row highlighted.
+    await searchAdd(page, 'casablanca', 'Casablanca');
+    await expect(rows).toHaveCount(2);
+    await expect(page.getByRole('status')).toHaveText('Casablanca is already listed.');
     await expect(rows.nth(0)).toHaveClass(/zone-row--flash/);
+
+    // UTC from the quick pick, then UTC from search (a different key for the same zone).
+    await page.getByRole('button', { name: 'Add city or timezone' }).click();
+    await page.locator('.picker').getByRole('button', { name: 'UTC', exact: true }).click();
+    await expect(rows).toHaveCount(3);
+    await searchAdd(page, 'utc', 'UTC');
+    await expect(rows).toHaveCount(3);
+    await expect(page.getByRole('status')).toHaveText('UTC is already listed.');
+    await page.getByRole('button', { name: 'Add city or timezone' }).click();
+    await expect(page.locator('.picker').getByRole('button', { name: 'UTC', exact: true })).toHaveCount(0);
+
+    // Both cities come back after a reload.
+    await page.reload();
+    await hydrated(page);
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toContainText('Casablanca (you)');
+    await expect(rows.nth(1)).toContainText('Rabat');
+    await expect(rows.nth(2)).toContainText('UTC');
   });
 });
