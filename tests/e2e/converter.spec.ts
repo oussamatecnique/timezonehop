@@ -26,6 +26,26 @@ test('converter: keyboard, add a city, swap, copy link', async ({ page, context 
   expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\?t=\d{4}-\d\d-\d\dT\d\d:\d\dZ&z=/);
 });
 
+test('at the six-row limit, the add button explains why it is disabled', async ({ page }) => {
+  await page.goto('/');
+  await hydrated(page);
+  const rows = page.locator('[data-zone-row]');
+  const addButton = page.getByRole('button', { name: 'Add city or timezone' });
+  const message = 'You can compare up to 6 at once. Remove one to add another.';
+  for (let n = 2; n <= 6; n++) {
+    await addButton.click();
+    await page.locator('.picker .chip').first().click();
+    await expect(rows).toHaveCount(n);
+  }
+  await expect(addButton).toBeDisabled();
+  await expect(addButton).toHaveAttribute('title', message);
+  await expect(page.getByText(message)).toBeVisible();
+  await page.getByRole('button', { name: /remove/i }).last().click();
+  await expect(addButton).toBeEnabled();
+  await expect(addButton).not.toHaveAttribute('title', /./); // Preact leaves title="", which shows nothing
+  await expect(page.getByText(message)).toHaveCount(0);
+});
+
 test.describe('duplicates', () => {
   test.use({ timezoneId: 'Africa/Casablanca' });
 

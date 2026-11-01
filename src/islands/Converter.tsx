@@ -141,6 +141,9 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
     savePrefs({ hour12 });
   };
 
+  const full = state.zones.length >= MAX_ZONES;
+  const fullNote = `You can compare up to ${MAX_ZONES} at once. Remove one to add another.`;
+
   const announce = (t: number) => setStatus(`${formatTime(zone0, t, { hour12: state.hour12 })} in ${state.zones[0].label}`);
 
   return (
@@ -213,7 +216,9 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
           type="button"
           class="btn btn--primary"
           aria-expanded={picking}
-          disabled={state.zones.length >= MAX_ZONES}
+          disabled={full}
+          // Hover tooltip; the note below says the same on touch screens.
+          title={full ? fullNote : undefined}
           onClick={() => setPicking(v => !v)}
         >
           Add city or timezone
@@ -233,6 +238,7 @@ export default function Converter({ title, pageZones, quickPicks, isHome, ssrNow
           24-hour clock
         </button>
       </div>
+      {full && <p class="converter__hint">{fullNote}</p>}
 
       {picking && (
         <div class="picker">
