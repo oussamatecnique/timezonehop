@@ -18,8 +18,25 @@ it('404 is noindex; robots and sitemap are complete', () => {
   expect(readFileSync('dist/robots.txt', 'utf8')).toContain('Sitemap: https://timezonehop.com/sitemap-index.xml');
   const sm = readFileSync('dist/sitemap-0.xml', 'utf8');
   const locs = sm.match(/<loc>/g)!.length;
-  expect(locs).toBeGreaterThanOrEqual(5600);
+  expect(locs).toBeGreaterThanOrEqual(1800);
   expect(sm).not.toContain('/404');
   expect(sm).toContain('<loc>https://timezonehop.com/convert/est-to-pst</loc>');
   expect(existsSync('dist/og/place.png')).toBe(true);
+});
+
+it('low-demand converter pairs stay live but are noindex and left out of the sitemap', () => {
+  const sm = readFileSync('dist/sitemap-0.xml', 'utf8');
+  const robots = (p: string) => page(p).querySelector('meta[name=robots]')?.getAttribute('content') ?? '';
+  expect(robots('/convert/kyiv-to-denver')).toBe('noindex, follow');
+  expect(sm).not.toContain('/convert/kyiv-to-denver<');
+  expect(robots('/convert/london-to-new-york')).toBe('');
+  expect(sm).toContain('<loc>https://timezonehop.com/convert/london-to-new-york</loc>');
+  // nothing in the sitemap may be noindex
+  const listed = [...sm.matchAll(/<loc>https:\/\/timezonehop\.com(\/convert\/[a-z0-9-]+)<\/loc>/g)].map(m => m[1]);
+  expect(listed.length).toBeGreaterThanOrEqual(500);
+  for (const p of listed) expect(robots(p), p).toBe('');
+  // the converter hub only promotes indexable pairs
+  const hubLinks = page('/convert').querySelectorAll('a[href^="/convert/"]').map(a => a.getAttribute('href')!);
+  expect(hubLinks.length).toBeGreaterThanOrEqual(100);
+  for (const p of hubLinks) expect(robots(p), p).toBe('');
 });

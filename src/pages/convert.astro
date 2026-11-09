@@ -5,6 +5,7 @@ import RelatedLinks from '../components/RelatedLinks.astro';
 import Converter from '../islands/Converter';
 import { getCatalog, nameOf, urlOf, type Pair } from '../data/catalog';
 import { TOP_ABBREVIATIONS } from '../data/popular';
+import { isIndexedPair } from '../data/indexing';
 import { quickPicks } from '../lib/converter-zones';
 import { pageMeta, crumbsFor } from '../lib/seo/meta';
 import { webAppLd } from '../lib/seo/jsonld';
@@ -13,8 +14,9 @@ import { BUILD_NOW } from '../lib/build-time';
 const ref = { type: 'hub', hub: 'convert' } as const;
 const cat = getCatalog();
 const pairLink = (p: Pair) => ({ href: urlOf(p), label: `${nameOf(p.from)} to ${nameOf(p.to)}` });
-const abbrPairs = cat.pairs.filter(p => p.kind === 'abbr').slice(0, 60).map(pairLink);
-const placePairs = cat.pairs.filter(p => p.kind === 'place').slice(0, 60).map(pairLink);
+const indexed = cat.pairs.filter(p => isIndexedPair(p, BUILD_NOW));
+const abbrPairs = indexed.filter(p => p.kind === 'abbr').slice(0, 60).map(pairLink);
+const placePairs = indexed.filter(p => p.kind === 'place').slice(0, 60).map(pairLink);
 const topAbbr = TOP_ABBREVIATIONS.map(s => cat.timezone.get(s)!);
 ---
 
