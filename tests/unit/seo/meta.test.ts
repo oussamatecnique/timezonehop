@@ -23,14 +23,6 @@ describe('meta', () => {
     }
   });
 
-  it('marks only low-demand converter pairs noindex', () => {
-    const cat = getCatalog();
-    const meta = (slug: string) => pageMeta({ type: 'pair', pair: cat.convert.get(slug)! }, NOW);
-    expect(meta('kyiv-to-denver').noindex).toBe(true);
-    expect(meta('london-to-new-york').noindex).toBe(false);
-    expect(meta('est-to-ist').noindex).toBe(false);
-  });
-
   it('formats key titles', () => {
     const cat = getCatalog();
     expect(pageMeta({ type: 'place', place: cat.time.get('tokyo')! }, NOW).title)

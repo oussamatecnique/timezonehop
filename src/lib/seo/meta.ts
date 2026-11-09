@@ -2,7 +2,6 @@
 import {
   getCatalog, nameOf, urlOf, zoneOf, type AbbrZone, type OffsetZone, type Pair, type Place,
 } from '../../data/catalog';
-import { isIndexedPair } from '../../data/indexing';
 import { offsetAt } from '../time/zone';
 import { formatDifference, formatOffset, zoneAbbreviation } from '../time/format';
 
@@ -216,7 +215,6 @@ export function pageMeta(ref: PageRef, now: number): PageMeta {
           : [`${A} to ${B} Time Converter${SUFFIX}`];
       return {
         ...base,
-        noindex: !isIndexedPair(p, now),
         title: fitTitle(titles),
         description: fitDescription([
           `Convert ${A} to ${B} time. ${B} is ${rel} ${A} right now. Free converter with a 24-hour table, best meeting times and daylight saving changes.`,
