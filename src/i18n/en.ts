@@ -52,6 +52,23 @@ export const en = {
   'pair.dst.diff.ahead': '{diff} ahead of {from}',
   'pair.dst.diff.behind': '{diff} behind {from}',
   'pair.dst.diff.same': 'on the same time as {from}',
+  'pair.dst.none.abbr': '{from} and {to} are fixed UTC offsets, so the difference between them never changes.',
+  'pair.dst.none.place': 'Neither {from} nor {to} changes its clocks in the next 12 months, so the difference stays the same.',
+  'pair.facts.zone': '{name} time zone',
+  'pair.facts.distance': 'Distance',
+  'pair.facts.distance.value': '{km} km ({miles} miles)',
+  'pair.facts.dst': 'Daylight saving time',
+  'pair.facts.dst.both': 'Both {from} and {to} change their clocks.',
+  'pair.facts.dst.one': '{yes} changes its clocks. {no} does not.',
+  'pair.facts.dst.neither': 'Neither {from} nor {to} changes its clocks.',
+  'pair.call': 'For a personal call, both places are between 8 AM and 10 PM from {fromStart} to {fromEnd} in {from} ({toStart} to {toEnd} in {to}).',
+  'pair.faq.noon.q': 'What time is it in {to} when it is noon in {from}?',
+  'pair.faq.noon.a': 'When it is 12:00 PM in {from}, it is {time}{day} in {to}.',
+  'pair.faq.ahead.q': 'Is {to} ahead of or behind {from}?',
+  'pair.faq.ahead.offsets': ' {from} is on {fromOffset} and {to} is on {toOffset}.',
+  'pair.faq.change.q': 'Does the time difference between {from} and {to} change during the year?',
+  'pair.faq.change.yes': 'Yes. The difference is {now} today and becomes {next} on {date}. It changes when one place moves its clocks and the other does not, or when they move on different dates.',
+  'pair.faq.change.no': 'No. {text}',
 } as const;
 
 export type EnKey = keyof typeof en;

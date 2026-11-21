@@ -29,3 +29,29 @@ export function meetingWindow(d: number): MeetingWindow {
   }
   return { kind: 'compromise', fromHour: best.fromHour, toMinutes: best.toMinutes };
 }
+
+export interface AwakeWindow {
+  fromStart: number;
+  fromEnd: number;
+  toStart: number;
+  toEnd: number;
+}
+
+const AWAKE_START = 8 * 60;
+const AWAKE_END = 22 * 60;
+
+/**
+ * The longest stretch when both places are between 8:00 and 22:00, in minutes after local
+ * midnight on each side. Two 14-hour days always share at least four hours.
+ */
+export function awakeWindow(d: number): AwakeWindow {
+  let best: AwakeWindow = { fromStart: 0, fromEnd: 0, toStart: 0, toEnd: 0 };
+  for (const shift of [0, 1440, -1440]) {
+    const start = Math.max(AWAKE_START, AWAKE_START - d + shift);
+    const end = Math.min(AWAKE_END, AWAKE_END - d + shift);
+    if (end - start > best.fromEnd - best.fromStart) {
+      best = { fromStart: start, fromEnd: end, toStart: start + d - shift, toEnd: end + d - shift };
+    }
+  }
+  return best;
+}
